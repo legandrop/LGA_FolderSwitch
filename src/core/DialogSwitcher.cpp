@@ -124,10 +124,19 @@ bool switchDialog(HWND dlg, const QString &folder)
         return false;
     }
 
+    // Los dialogos esperan el path como lo escribe Windows: barras invertidas y
+    // barra final (sin la final, algunos tratan el texto como nombre de archivo
+    // en vez de navegar a la carpeta). Se normaliza una sola vez, aca, para que
+    // valga igual en el camino Win32 y en el de UI Automation.
+    QString path = QDir::toNativeSeparators(folder);
+    if (!path.endsWith(QChar::fromLatin1('\\'))) {
+        path += QChar::fromLatin1('\\');
+    }
+
     // Un solo punto de decision: dialogos Qt puro (sin hijos Win32, p.ej. Nuke)
     // van por UI Automation; el resto sigue el camino Win32 clasico de abajo.
     if (WindowUtils::isQtFileDialog(dlg)) {
-        return UiaSwitcher::switchQtDialog(dlg, folder);
+        return UiaSwitcher::switchQtDialog(dlg, path);
     }
 
     HWND edit = findFileNameEdit(dlg);
@@ -136,7 +145,7 @@ bool switchDialog(HWND dlg, const QString &folder)
     }
 
     const QString previousText = getEditText(edit);
-    const QString nativePath = QDir::toNativeSeparators(folder);
+    const QString &nativePath = path;
 
     setEditText(edit, nativePath);
 

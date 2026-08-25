@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-25 (9)
+
+El camino de UI Automation escribia el path con barras normales (`N:/x/y/`) porque
+asi lo mostraba Nuke, pero los dialogos lo quieren como lo escribe Windows. Ahora se
+normaliza a barras invertidas con barra final (`C:\x\y\`). La barra final importa:
+sin ella algunos dialogos toman el texto como nombre de archivo en vez de navegar a
+la carpeta. La normalizacion se movio al punto unico de despacho en
+`DialogSwitcher::switchDialog`, asi vale igual para el camino Win32 y el de UIA en
+vez de estar duplicada y divergiendo.
+
+[commit sugerido: "fix: normalizar el path a barras invertidas con barra final"]
+
 ## 2026-08-25 (8)
 
 Los dialogos de Nuke no son dialogos de Windows: son clase `Qt653QWindowIcon` y

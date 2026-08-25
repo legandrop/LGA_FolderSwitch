@@ -149,11 +149,9 @@ bool switchQtDialog(HWND dlg, const QString &folder)
         return false;
     }
 
-    // --- Escribir el path (barras normales, con barra final) ---
-    QString path = QDir::fromNativeSeparators(folder);
-    if (!path.endsWith(QLatin1Char('/'))) {
-        path += QLatin1Char('/');
-    }
+    // El path ya viene normalizado desde DialogSwitcher::switchDialog
+    // (barras invertidas y barra final). No se re-normaliza aca.
+    const QString &path = folder;
 
     IUIAutomationValuePattern *targetValuePattern = nullptr;
     if (SUCCEEDED(targetEdit->GetCurrentPatternAs(UIA_ValuePatternId, IID_IUIAutomationValuePattern,
