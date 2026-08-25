@@ -173,68 +173,19 @@ bool switchQtDialog(HWND dlg, const QString &folder)
         qWarning() << "[UiaSwitcher] El Edit elegido no soporta ValuePattern.";
     }
 
-    targetEdit->Release();
-
     if (!result) {
+        targetEdit->Release();
         element->Release();
         automation->Release();
         return false;
     }
 
-    // --- Buscar boton de aceptar e invocar ---
-    VARIANT varButtonType;
-    VariantInit(&varButtonType);
-    varButtonType.vt = VT_I4;
-    varButtonType.lVal = UIA_ButtonControlTypeId;
-
-    IUIAutomationCondition *buttonCondition = nullptr;
-    hr = automation->CreatePropertyCondition(UIA_ControlTypePropertyId, varButtonType, &buttonCondition);
-    VariantClear(&varButtonType);
-
-    bool invoked = false;
-    if (SUCCEEDED(hr) && buttonCondition) {
-        IUIAutomationElementArray *buttonArray = nullptr;
-        hr = element->FindAll(TreeScope_Descendants, buttonCondition, &buttonArray);
-        if (SUCCEEDED(hr) && buttonArray) {
-            int buttonCount = 0;
-            buttonArray->get_Length(&buttonCount);
-            for (int i = 0; i < buttonCount && !invoked; ++i) {
-                IUIAutomationElement *btn = nullptr;
-                if (FAILED(buttonArray->GetElement(i, &btn)) || !btn) {
-                    continue;
-                }
-                BSTR bstrName = nullptr;
-                QString name;
-                if (SUCCEEDED(btn->get_CurrentName(&bstrName))) {
-                    name = bstrToQString(bstrName);
-                    if (bstrName) SysFreeString(bstrName);
-                }
-                if (acceptButtonNames().contains(name.trimmed(), Qt::CaseInsensitive)) {
-                    IUIAutomationInvokePattern *invokePattern = nullptr;
-                    if (SUCCEEDED(btn->GetCurrentPatternAs(UIA_InvokePatternId, IID_IUIAutomationInvokePattern,
-                                                            reinterpret_cast<void **>(&invokePattern))) &&
-                        invokePattern) {
-                        HRESULT invHr = invokePattern->Invoke();
-                        invokePattern->Release();
-                        if (SUCCEEDED(invHr)) {
-                            invoked = true;
-                            qDebug() << "[UiaSwitcher] Boton invocado:" << name;
-                        } else {
-                            qWarning() << "[UiaSwitcher] Invoke fallo en boton" << name << "hr=" << invHr;
-                        }
-                    }
-                }
-                btn->Release();
-            }
-            buttonArray->Release();
-        }
-        buttonCondition->Release();
-    }
-
-    if (!invoked) {
-        qDebug() << "[UiaSwitcher] No se encontro/invoco boton de aceptar; valor queda escrito.";
-    }
-
+    // Se escribe el path y NADA MAS: ni Enter, ni el boton de aceptar.
+    // En el browser de Nuke cualquier "aceptar" commitea el texto como el
+    // archivo elegido, asi que con una carpeta el dialogo se cerraba eligiendo
+    // la carpeta como si fuera un archivo. Probado: pasa igual invocando "Open"
+    // que mandando Enter con el campo enfocado.
+    targetEdit->Release();
     element->Release();
     automation->Release();
     return true;

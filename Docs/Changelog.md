@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-25 (10)
+
+En el browser de Nuke, el camino de UI Automation escribia el path y ademas
+"aceptaba": el dialogo del Read se cerraba eligiendo la carpeta como si fuera el
+archivo. Se comprobo que pasa igual invocando el boton "Open" que mandando Enter con
+el campo enfocado por UIA (el foco de teclado era correcto, no era ese el problema):
+en ese browser cualquier aceptar commitea el texto. Ahora se escribe el path y nada
+mas. El camino Win32 no cambia: ahi el IDOK es lo que hace navegar y funciona bien.
+
+[commit sugerido: "fix: en dialogos Qt escribir el path sin aceptar"]
+
 ## 2026-08-25 (9)
 
 El camino de UI Automation escribia el path con barras normales (`N:/x/y/`) porque
