@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-25 (7)
+
+La deteccion andaba (XYplorer, path resuelto, logica de retorno) pero la inyeccion
+fallaba con "No se encontro el edit de nombre de archivo": la busqueda del combo
+miraba solo hijos DIRECTOS del dialogo, y segun la app ese combo cuelga de un
+contenedor intermedio. El dialogo de Notepad, con el que se habia probado, lo tiene
+directo; el de otras apps no. Ahora se recorre todo el arbol de descendientes con
+tres pasadas (ComboBoxEx32 > ComboBox > Edit, ComboBox > Edit pelado, y cualquier
+Edit visible y habilitado). Si aun asi no aparece, se loguean las clases del dialogo
+para poder identificarlo.
+
+[commit sugerido: "fix: buscar el edit del dialogo en todo el arbol, no solo hijos directos"]
+
 ## 2026-08-25 (6)
 
 `compilar.bat` compilaba bien pero nunca abria la app: las dos ramas del final

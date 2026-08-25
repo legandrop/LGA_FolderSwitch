@@ -2,25 +2,90 @@
 
 #include <QDebug>
 #include <QDir>
+#include <QList>
+#include <QStringList>
 #include <QTimer>
 
 namespace {
 
+QString classOf(HWND hwnd)
+{
+    wchar_t buf[128] = {0};
+    GetClassNameW(hwnd, buf, static_cast<int>(std::size(buf)));
+    return QString::fromWCharArray(buf);
+}
+
+struct Descendant {
+    HWND hwnd;
+    QString cls;
+    int depth;
+};
+
+// Recorre TODO el arbol, no solo los hijos directos: segun la app, el combo del
+// nombre de archivo cuelga de un contenedor intermedio y no del dialogo.
+void collectDescendants(HWND parent, int depth, QList<Descendant> *out)
+{
+    if (depth > 6) {
+        return;
+    }
+    struct Ctx { int depth; QList<Descendant> *out; } ctx{depth, out};
+    EnumChildWindows(parent, [](HWND hwnd, LPARAM lp) -> BOOL {
+        auto *c = reinterpret_cast<Ctx *>(lp);
+        c->out->append({hwnd, classOf(hwnd), c->depth});
+        return TRUE;
+    }, reinterpret_cast<LPARAM>(&ctx));
+}
+
+bool usableEdit(HWND hwnd)
+{
+    return IsWindowVisible(hwnd) && IsWindowEnabled(hwnd);
+}
+
 HWND findFileNameEdit(HWND dlg)
 {
-    // Camino tipico: ComboBoxEx32 -> ComboBox -> Edit.
-    HWND comboEx = FindWindowExW(dlg, nullptr, L"ComboBoxEx32", nullptr);
-    if (comboEx) {
-        HWND combo = FindWindowExW(comboEx, nullptr, L"ComboBox", nullptr);
-        if (combo) {
-            HWND edit = FindWindowExW(combo, nullptr, L"Edit", nullptr);
-            if (edit) {
-                return edit;
-            }
+    // EnumChildWindows ya es recursivo sobre todo el arbol de descendientes.
+    QList<Descendant> all;
+    collectDescendants(dlg, 0, &all);
+
+    // 1) Camino tipico: ComboBoxEx32 -> ComboBox -> Edit, este donde este.
+    for (const Descendant &d : all) {
+        if (d.cls.compare(QStringLiteral("ComboBoxEx32"), Qt::CaseInsensitive) != 0) {
+            continue;
+        }
+        HWND combo = FindWindowExW(d.hwnd, nullptr, L"ComboBox", nullptr);
+        HWND edit = combo ? FindWindowExW(combo, nullptr, L"Edit", nullptr) : nullptr;
+        if (edit && usableEdit(edit)) {
+            return edit;
         }
     }
-    // Fallback: Edit directo hijo del dialogo.
-    return FindWindowExW(dlg, nullptr, L"Edit", nullptr);
+
+    // 2) Algunos dialogos usan ComboBox pelado, sin el wrapper Ex32.
+    for (const Descendant &d : all) {
+        if (d.cls.compare(QStringLiteral("ComboBox"), Qt::CaseInsensitive) != 0) {
+            continue;
+        }
+        HWND edit = FindWindowExW(d.hwnd, nullptr, L"Edit", nullptr);
+        if (edit && usableEdit(edit)) {
+            return edit;
+        }
+    }
+
+    // 3) Ultimo recurso: el primer Edit util del arbol.
+    for (const Descendant &d : all) {
+        if (d.cls.compare(QStringLiteral("Edit"), Qt::CaseInsensitive) == 0 && usableEdit(d.hwnd)) {
+            return d.hwnd;
+        }
+    }
+
+    // Sin edit: volcamos el arbol para poder diagnosticar que dialogo es.
+    QStringList seen;
+    for (const Descendant &d : all) {
+        if (!seen.contains(d.cls)) {
+            seen.append(d.cls);
+        }
+    }
+    qWarning() << "[DialogSwitcher] Sin edit. Clases del dialogo:" << seen.join(QStringLiteral(", "));
+    return nullptr;
 }
 
 QString getEditText(HWND edit)
@@ -58,8 +123,7 @@ bool switchDialog(HWND dlg, const QString &folder)
 
     HWND edit = findFileNameEdit(dlg);
     if (!edit) {
-        qWarning() << "[DialogSwitcher] No se encontro el edit de nombre de archivo.";
-        return false;
+        return false;   // findFileNameEdit ya logueo el arbol de clases
     }
 
     const QString previousText = getEditText(edit);
