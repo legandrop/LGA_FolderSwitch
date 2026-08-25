@@ -1,0 +1,3 @@
+# Flags de debug de LGA_FolderSwitch.
+# log=true escribe debug.log en la raiz del repo (al lado de config/).
+log=true

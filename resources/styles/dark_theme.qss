@@ -1,0 +1,96 @@
+/* ------------------------------ Base ------------------------------ */
+QWidget {
+    background-color: #161616;
+    color: #B2B2B2;
+    font-family: "Inter", "Segoe UI", Arial, Helvetica;
+    font-size: 13px;
+}
+
+QMainWindow {
+    background-color: #161616;
+}
+
+QLabel {
+    color: #B2B2B2;
+    background-color: transparent;
+}
+
+QLabel#statusLabel {
+    color: #B2B2B2;
+    font-weight: 500;
+}
+
+QLabel#hotkeyLabel {
+    color: #8f8f8f;
+    font-size: 11px;
+}
+
+/* ------------------------------ CheckBox ------------------------------ */
+QCheckBox {
+    color: #B2B2B2;
+    spacing: 8px;
+    background-color: transparent;
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid #303030;
+    background-color: #1d1d1d;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #774dcb;
+    border: 1px solid #774dcb;
+}
+
+QCheckBox::indicator:hover {
+    border: 1px solid #443a91;
+}
+
+/* ------------------------------ Botones ------------------------------ */
+QPushButton {
+    background-color: #1d1d1d;
+    color: #B2B2B2;
+    border: 1px solid #303030;
+    padding: 6px 12px;
+    border-radius: 5px;
+}
+
+QPushButton:hover {
+    background-color: #303030;
+}
+
+QPushButton:pressed {
+    background-color: #443a91;
+}
+
+/* ------------------------------ ScrollBars ------------------------------ */
+QScrollBar:vertical {
+    background-color: #161616;
+    width: 12px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #1d1d1d;
+    min-height: 30px;
+    border-radius: 3px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #303030;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+    background: none;
+}
+
+/* ------------------------------ Seleccion de texto global ------------------------------ */
+* {
+    selection-background-color: #443a91;
+    selection-color: #ffffff;
+}

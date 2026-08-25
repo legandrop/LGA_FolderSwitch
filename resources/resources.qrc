@@ -1,0 +1,10 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>styles/dark_theme.qss</file>
+        <file>icons/LGA_FolderSwitch.png</file>
+        <file>icons/LGA_FolderSwitch_menubar.png</file>
+        <file>fonts/Inter_18pt-Regular.ttf</file>
+        <file>fonts/Inter_18pt-Medium.ttf</file>
+    </qresource>
+</RCC>
