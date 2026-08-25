@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-25 (6)
+
+`compilar.bat` compilaba bien pero nunca abria la app: las dos ramas del final
+(`--no-run` y el caso normal) hacian `exit /b 0`, asi que el `.exe` no se lanzaba
+nunca. Ademas le faltaba el `taskkill` previo que si tiene LinkRedirector; como la
+app vive en la bandeja, una instancia viva bloquea el `.exe` y el link falla con
+"Permission denied", y el QLockFile hace salir en silencio a la instancia nueva.
+Se agrego el taskkill, se lanza el exe al terminar, y Debug/Release usan arboles
+separados (`build/` y `build-release/`) porque antes `--release` reusaba la cache
+de Debug y se ignoraba.
+
+[commit sugerido: "fix: compilar.bat no lanzaba la app ni mataba la instancia previa"]
+
 ## 2026-08-25 (5)
 
 Se fijo la marca "carpeta que apunta" (T3) y se regeneraron los assets. El generador
