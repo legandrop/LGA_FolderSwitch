@@ -2,7 +2,7 @@
 """Emite SVG (para diseno) y los assets de produccion desde la misma geometria."""
 import os
 from PIL import Image
-import marks, render
+import marks, render, oncanvas
 
 OUT_ICONS = os.path.join("..", "..", "resources", "icons")
 
@@ -50,12 +50,12 @@ if __name__ == "__main__":
     print("svg/ ->", sorted(os.listdir("svg")))
 
     KEY = "T3"  # marca elegida
-    # PNG grande (transparente donde no hay tinta): se compone sobre blanco.
-    big = render.cmy_mark(1024, KEY)
+    # PNG grande, RGBA con alfa real (transparente donde no hay tinta).
+    big = oncanvas.cmy_rgba(1024, KEY)
     big.save(os.path.join(OUT_ICONS, "LGA_FolderSwitch_1024.png"))
     big.resize((512, 512), Image.LANCZOS).save(os.path.join(OUT_ICONS, "LGA_FolderSwitch.png"))
-    # ICO multi-tamano
-    ico = [render.cmy_mark(s, KEY).convert("RGBA") for s in (256, 128, 64, 48, 32, 24, 16)]
+    # ICO multi-tamano, cada tamano renderizado directo (no escalado) para aprovechar el supersampling propio.
+    ico = [oncanvas.cmy_rgba(s, KEY) for s in (256, 128, 64, 48, 32, 24, 16)]
     ico[0].save(os.path.join(OUT_ICONS, "LGA_FolderSwitch.ico"),
                 sizes=[(i.width, i.height) for i in ico], append_images=ico[1:])
     # Tray: silueta negra con alpha; la app la tintea segun el tema.

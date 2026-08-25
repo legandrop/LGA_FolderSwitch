@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-25 (5)
+
+Se fijo la marca "carpeta que apunta" (T3) y se regeneraron los assets. El generador
+escribia los PNG y el ICO con la ruta que compone sobre blanco, asi que los archivos
+quedaban RGB sin alfa: sobre la barra de tareas oscura se habrian visto como un
+cuadrado blanco. Ahora `emit.py` usa la ruta con alfa real para todo el raster de
+color, y cada tamano del ICO (16..256) se renderiza a su tamano en vez de escalarse
+desde uno grande. El menubar sigue siendo silueta negra con alfa, que la app tintea
+en runtime.
+
+[commit sugerido: "fix: assets del icono en RGBA con alfa real"]
+
 ## 2026-08-25 (4)
 
 La primera marca fallaba en tres cosas medibles contra el resto del set: 1.37 de
