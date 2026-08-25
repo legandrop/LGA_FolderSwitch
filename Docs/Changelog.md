@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-25 (3)
+
+La app usaba un icono prestado de LinkRedirector. Se diseñó marca propia dentro del
+sistema de las apps LGA: silueta maciza de carpeta, tres planchas CMY desregistradas
+a 120°, y flecha gris encima (no calada: calarla deja flecos, porque el hueco de cada
+plancha cae desplazado). Paleta y offsets medidos de los PNG existentes, no estimados.
+El glifo se ajusta al core — la intersección de las tres planchas — y no a la silueta.
+Se agregó `tools/logo/` (geometría única en Python que emite PNG, ICO y SVG) y se
+verificó la lectura a 16 px componiendo sobre capturas reales de la barra y el tray.
+
+[commit sugerido: "feat: marca propia de LGA_FolderSwitch y generador de iconos"]
+
 ## 2026-08-25 (2)
 
 El auto-switch fallaba al volver de XYplorer: la condición exigía que la ventana

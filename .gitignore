@@ -21,3 +21,11 @@ compile_commands.json
 # Sistema
 Thumbs.db
 Desktop.ini
+
+# Salidas de trabajo del generador de logo (los assets finales si se commitean)
+tools/logo/contact_sheet.png
+tools/logo/preview_*.png
+tools/logo/ab_vs_reales.png
+tools/logo/on_*.png
+tools/logo/ctx_*.png
+tools/logo/__pycache__/
