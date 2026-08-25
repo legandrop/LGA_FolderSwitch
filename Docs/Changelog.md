@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-25 (8)
+
+Los dialogos de Nuke no son dialogos de Windows: son clase `Qt653QWindowIcon` y
+`EnumChildWindows` devuelve CERO hijos, porque Qt dibuja sus widgets internamente.
+No hay ningun `Edit` que tocar, asi que la inyeccion Win32 era imposible ahi y la
+deteccion (que exigia `#32770`) ni los veia. Se agrego una segunda via por UI
+Automation: `isQtFileDialog` clasifica por clase `Qt*` + owner no nulo (la ventana
+principal de Nuke comparte clase pero no tiene owner) + presencia de un campo y un
+boton de aceptar; y `UiaSwitcher` escribe el path con `ValuePattern::SetValue` e
+invoca el boton. Medido sobre el dialogo real: UIA cuesta 9 ms, barato para
+clasificar en cada cambio de foco, y se cachea por ventana.
+
+[commit sugerido: "feat: soporte de dialogos Qt (Nuke) via UI Automation"]
+
 ## 2026-08-25 (7)
 
 La deteccion andaba (XYplorer, path resuelto, logica de retorno) pero la inyeccion

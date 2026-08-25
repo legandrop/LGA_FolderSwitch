@@ -1,4 +1,5 @@
 #include "tray/TrayController.h"
+#include "core/DialogSwitcher.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -12,6 +13,7 @@
 #include <QSystemTrayIcon>
 
 #include <objbase.h>
+#include <cstdlib>
 
 #include <QDateTime>
 #include <QTextStream>
@@ -79,6 +81,23 @@ int main(int argc, char *argv[])
 
     // COM en modo apartment: lo necesita FolderResolver (IShellWindows/IWebBrowser2).
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+    // Modo de prueba oculto: --test-switch <hwnd_decimal> <folder>
+    // No levanta el tray; hace el switch sobre ese HWND (Qt o Win32 segun
+    // corresponda, decidido dentro de DialogSwitcher::switchDialog) y sale.
+    if (argc >= 4 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--test-switch")) {
+        bool okConv = false;
+        const quintptr hwndValue = QString::fromLocal8Bit(argv[2]).toULongLong(&okConv);
+        const QString folder = QString::fromLocal8Bit(argv[3]);
+        HWND dlg = okConv ? reinterpret_cast<HWND>(hwndValue) : nullptr;
+
+        qDebug() << "[test-switch] hwnd=" << argv[2] << "folder=" << folder;
+        const bool ok = dlg ? DialogSwitcher::switchDialog(dlg, folder) : false;
+        qDebug() << "[test-switch] resultado:" << (ok ? "OK" : "FALLO");
+
+        CoUninitialize();
+        return ok ? 0 : 1;
+    }
 
     // Instancia unica.
     static QLockFile singleInstanceLock(

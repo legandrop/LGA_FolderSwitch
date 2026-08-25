@@ -37,6 +37,7 @@ set(SOURCES
     src/core/ForegroundWatcher.cpp
     src/core/FolderResolver.cpp
     src/core/DialogSwitcher.cpp
+    src/core/UiaSwitcher.cpp
     src/core/HotkeyFilter.cpp
     src/core/WindowUtils.cpp
     src/windows/AutoStart.cpp
@@ -49,6 +50,7 @@ set(HEADERS
     src/core/ForegroundWatcher.h
     src/core/FolderResolver.h
     src/core/DialogSwitcher.h
+    src/core/UiaSwitcher.h
     src/core/HotkeyFilter.h
     src/core/WindowUtils.h
     src/windows/AutoStart.h
@@ -73,6 +75,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ole32
     oleaut32
     user32
+    uuid
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE

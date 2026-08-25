@@ -197,7 +197,7 @@ void TrayController::onForegroundChanged(quintptr hwndValue)
             m_pendingReturnDialog = m_lastDialogHwnd;
             qDebug() << "[TrayController] Marcado dialogo pendiente de retorno:" << m_pendingReturnDialog;
         }
-    } else if (WindowUtils::isFileDialogWindow(hwnd)) {
+    } else if (WindowUtils::isFileDialogWindow(hwnd) || WindowUtils::isQtFileDialog(hwnd)) {
         qDebug() << "[TrayController] Foreground: file dialog" << hwnd;
         m_lastDialogHwnd = hwnd;
 
@@ -225,7 +225,7 @@ void TrayController::onForegroundChanged(quintptr hwndValue)
 void TrayController::onHotkeyPressed()
 {
     HWND fg = GetForegroundWindow();
-    if (!fg || !WindowUtils::isFileDialogWindow(fg)) {
+    if (!fg || !(WindowUtils::isFileDialogWindow(fg) || WindowUtils::isQtFileDialog(fg))) {
         qDebug() << "[TrayController] Hotkey: la ventana en foreground no es un file dialog.";
         return;
     }

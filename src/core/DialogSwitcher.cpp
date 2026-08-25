@@ -1,5 +1,8 @@
 #include "core/DialogSwitcher.h"
 
+#include "core/WindowUtils.h"
+#include "core/UiaSwitcher.h"
+
 #include <QDebug>
 #include <QDir>
 #include <QList>
@@ -119,6 +122,12 @@ bool switchDialog(HWND dlg, const QString &folder)
 {
     if (!dlg || folder.isEmpty()) {
         return false;
+    }
+
+    // Un solo punto de decision: dialogos Qt puro (sin hijos Win32, p.ej. Nuke)
+    // van por UI Automation; el resto sigue el camino Win32 clasico de abajo.
+    if (WindowUtils::isQtFileDialog(dlg)) {
+        return UiaSwitcher::switchQtDialog(dlg, folder);
     }
 
     HWND edit = findFileNameEdit(dlg);
