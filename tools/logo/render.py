@@ -19,7 +19,7 @@ def _draw(size, solids, holes, fill, ss=SS):
     return out
 
 
-def cmy_mark(size, key, bg=(255, 255, 255), glyph=True):
+def cmy_mark(size, key, bg=(255, 255, 255)):
     """Las 3 planchas CMY desplazadas y multiplicadas.
 
     El glifo NO se cala: va encima en gris claro, como el "S3" de FileManagerS3.
@@ -32,11 +32,10 @@ def cmy_mark(size, key, bg=(255, 255, 255), glyph=True):
         dx, dy = marks.OFFSETS[name]
         dx *= marks.OFFSET_SCALE * size
         dy *= marks.OFFSET_SCALE * size
-        # Las planchas van MACIZAS: el glifo no se cala en ellas. Si se calara,
-        # el hueco de cada plancha caeria en distinto lugar y rodearia al glifo
-        # de flecos de color.
-        sol = [[(x + dx * 100.0 / size, y + dy * 100.0 / size) for x, y in p] for p in solids]
-        layer = _draw(size, sol, [], color)
+        # El calado es parte de la SILUETA (no un glifo encima): se cala en cada
+        # plancha y se desregistra con ella, como los agujeros de MediaTools.
+        sh = lambda ps: [[(x + dx * 100.0 / size, y + dy * 100.0 / size) for x, y in p] for p in ps]
+        layer = _draw(size, sh(solids), sh(holes), color)
         flat = Image.new("RGB", (size, size), (255, 255, 255))
         flat.paste(layer, (0, 0), layer)
         # multiply
@@ -44,10 +43,6 @@ def cmy_mark(size, key, bg=(255, 255, 255), glyph=True):
             Image.fromarray(__import__("numpy").uint8(
                 __import__("numpy").asarray(b, dtype=float) * __import__("numpy").asarray(f, dtype=float) / 255.0))
             for b, f in zip(base.split(), flat.split())]), lambda v: v)
-    if glyph and holes:
-        g = _draw(size, holes, [], marks.GLYPH)
-        base = base.convert("RGB")
-        base.paste(g, (0, 0), g)
     return base
 
 

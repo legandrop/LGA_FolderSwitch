@@ -49,7 +49,7 @@ if __name__ == "__main__":
         open("svg/%s_mono.svg" % key, "w").write(svg_mark(key, mono="#000000"))
     print("svg/ ->", sorted(os.listdir("svg")))
 
-    KEY = "C2"  # marca elegida
+    KEY = "T3"  # marca elegida
     # PNG grande (transparente donde no hay tinta): se compone sobre blanco.
     big = render.cmy_mark(1024, KEY)
     big.save(os.path.join(OUT_ICONS, "LGA_FolderSwitch_1024.png"))

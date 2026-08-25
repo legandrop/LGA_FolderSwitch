@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-25 (4)
+
+La primera marca fallaba en tres cosas medibles contra el resto del set: 1.37 de
+proporcion W/H (los otros van 0.88-1.00), 7.9% de verde (los otros 3.7-4.8%) y solo
+46% de core. La flecha gris encima se comia la masa oscura, y una forma ancha alarga
+el borde inferior, que es justo donde cyan y amarillo se solapan en verde. Se
+reemplazo por silueta maciza sin glifo, mas alta y con el lado derecho en punta:
+0.93 / 5.0% / 58%, los tres en rango. El generador ahora mide esas tres cifras, asi
+que cualquier variante se compara con datos y no a ojo.
+
+[commit sugerido: "fix: marca mas alta, sin glifo claro y con el verde en rango"]
+
 ## 2026-08-25 (3)
 
 La app usaba un icono prestado de LinkRedirector. Se diseñó marca propia dentro del

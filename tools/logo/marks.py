@@ -70,34 +70,100 @@ def arrow(x, y, w, h, direction="right", head=0.52, tail=0.42):
 
 
 # --- Direcciones -----------------------------------------------------------
-# Cada una devuelve (solidos, huecos): poligonos que se pintan y que se calan.
+# Sin glifo claro: la silueta sola dice el switch, como el triangulo de
+# LGA_Player. Proporcion ~0.90 W/H y forma no muy ancha, para que el borde
+# inferior no solape cyan+amarillo en una banda verde.
 
-def dir_c():
-    """C - Carpeta con flecha maciza calada entrando. Linea base."""
-    return [folder_body()], [arrow(20, 46, 60, 30, "right")]
-
-
-def dir_c2():
-    """C2 - Flecha gorda dentro del core. Marca elegida.
-
-    La caja de la flecha se ajusta al CORE (la interseccion de las 3 planchas,
-    x 11..88 / y 34..83 segun fitcore.py), no a la silueta: si se ajustara a la
-    silueta, la punta se saldria del negro y quedaria flotando en los flecos.
-    """
-    return [folder_body()], [arrow(20, 45, 60, 30, "right")]
-
-
-def dir_a2():
-    """A2 - Doble flecha, pero mucho mas gorda (test del swap legible)."""
-    return [folder_body()], [arrow(20, 42, 60, 19, "right", tail=0.60),
-                             arrow(20, 66, 60, 19, "left", tail=0.60)]
+def _tab(x0, y0, tab_w, tab_h, r):
+    """Pestana superior izquierda, comun a todas."""
+    import math
+    pts = []
+    for i in range(9):
+        a = math.radians(180 + i * 90 / 8)
+        pts.append((x0 + r + r * math.cos(a), y0 + r + r * math.sin(a)))
+    pts.append((x0 + tab_w, y0))
+    pts.append((x0 + tab_w + 8, y0 + tab_h))
+    return pts
 
 
-def dir_e():
-    """E - La flecha rompe el borde derecho: el salto sale de la carpeta."""
-    f = folder_body()
-    a = arrow(30, 45, 74, 32, "right")
-    return [f, a], [arrow(20, 52, 30, 18, "right")]
+def _corner(cx, cy, r, a0):
+    import math
+    return [(cx + r * math.cos(math.radians(a0 + i * 90 / 8)),
+             cy + r * math.sin(math.radians(a0 + i * 90 / 8))) for i in range(9)]
 
 
-DIRECTIONS = {"C": dir_c, "C2": dir_c2, "A2": dir_a2, "E": dir_e}
+def folder(x0=17, y0=14, x1=83, y1=94, tab_w=34, tab_h=13, r=8):
+    """Carpeta clasica, proporcion ~0.85 W/H. La pestana franca es lo que hace
+    que lea como carpeta y no como rectangulo redondeado."""
+    pts = _tab(x0, y0, tab_w, tab_h, r)
+    yb = y0 + tab_h
+    pts += _corner(x1 - r, yb + r, r, -90)
+    pts += _corner(x1 - r, y1 - r, r, 0)
+    pts += _corner(x0 + r, y1 - r, r, 90)
+    return pts
+
+
+def _chevron(xc, yc, w, h, t):
+    """Chevron macizo ">" centrado en (xc, yc)."""
+    return [(xc - w / 2, yc - h / 2), (xc - w / 2 + t, yc - h / 2),
+            (xc + w / 2, yc), (xc - w / 2 + t, yc + h / 2), (xc - w / 2, yc + h / 2),
+            (xc + w / 2 - t, yc)]
+
+
+def dir_t1():
+    """T1 - Doble pestana: dos carpetas insinuadas en el borde superior.
+    Todo masa, sin calado: el switch vive en la silueta."""
+    import math
+    x0, y0, x1, y1, r = 17, 12, 83, 94, 8
+    s1_w, s1_h, s2_w, s2_h = 26, 9, 52, 9
+    pts = _tab(x0, y0, s1_w, s1_h, r)          # primera pestana
+    pts.append((x0 + s2_w, y0 + s1_h))          # escalon a la segunda
+    pts.append((x0 + s2_w + 8, y0 + s1_h + s2_h))
+    yb = y0 + s1_h + s2_h
+    pts += _corner(x1 - r, yb + r, r, -90)
+    pts += _corner(x1 - r, y1 - r, r, 0)
+    pts += _corner(x0 + r, y1 - r, r, 90)
+    return [pts], []
+
+
+def dir_t2():
+    """T2 - Calado chico tipo badge, abajo a la derecha. El desregistro queda
+    contenido, como los agujeros de MediaTools."""
+    return [folder()], [_chevron(64, 74, 18, 22, 7)]
+
+
+def dir_t3():
+    """T3 - Carpeta maciza con el lado derecho en punta."""
+    x0, y0, y1, r, tab_w, tab_h = 17, 14, 94, 8, 34, 13
+    shoulder, tip = 74, 88
+    pts = _tab(x0, y0, tab_w, tab_h, r)
+    yb = y0 + tab_h
+    pts += _corner(shoulder - r, yb + r, r, -90)
+    pts += [(tip, (yb + y1) / 2.0)]
+    pts += _corner(shoulder - r, y1 - r, r, 0)
+    pts += _corner(x0 + r, y1 - r, r, 90)
+    return [pts], []
+
+
+def dir_t4():
+    """T4 - Carpeta inclinada: movimiento sin calar nada."""
+    sk = 0.18
+    base = folder(x0=14, y0=14, x1=78, y1=94)
+    cy = 54.0
+    return [[(x + (cy - y) * sk, y) for x, y in base]], []
+
+
+def dir_t5():
+    """T5 - Inclinada y en punta: la suma de T3 y T4."""
+    x0, y0, y1, r, tab_w, tab_h = 14, 14, 94, 8, 32, 13
+    shoulder, tip, sk, cy = 70, 84, 0.16, 54.0
+    pts = _tab(x0, y0, tab_w, tab_h, r)
+    yb = y0 + tab_h
+    pts += _corner(shoulder - r, yb + r, r, -90)
+    pts += [(tip, (yb + y1) / 2.0)]
+    pts += _corner(shoulder - r, y1 - r, r, 0)
+    pts += _corner(x0 + r, y1 - r, r, 90)
+    return [[(x + (cy - y) * sk, y) for x, y in pts]], []
+
+
+DIRECTIONS = {"T3": dir_t3, "T4": dir_t4, "T1": dir_t1, "T2": dir_t2}

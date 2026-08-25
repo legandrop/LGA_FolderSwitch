@@ -3,7 +3,7 @@
 from PIL import Image, ImageDraw
 import numpy as np, marks, render
 
-def cmy_rgba(size, key, glyph=True):
+def cmy_rgba(size, key):
     """Marca con alfa real: transparente donde no hay tinta."""
     solids, holes = marks.DIRECTIONS[key]()
     rgb = np.ones((size, size, 3), dtype=float)
@@ -12,17 +12,14 @@ def cmy_rgba(size, key, glyph=True):
         dx, dy = marks.OFFSETS[name]
         dx *= marks.OFFSET_SCALE * size
         dy *= marks.OFFSET_SCALE * size
-        sol = [[(x + dx * 100.0 / size, y + dy * 100.0 / size) for x, y in p] for p in solids]
-        lay = render._draw(size, sol, [], col)
+        sh = lambda ps: [[(x + dx * 100.0 / size, y + dy * 100.0 / size) for x, y in p] for p in ps]
+        lay = render._draw(size, sh(solids), sh(holes), col)
         a = np.asarray(lay.getchannel("A"), dtype=float) / 255.0
         c = np.asarray(col, dtype=float) / 255.0
         rgb *= (1.0 - a[..., None]) + a[..., None] * c[None, None, :]
         alpha = alpha + a - alpha * a
     out = Image.fromarray(np.uint8(np.clip(rgb, 0, 1) * 255))
     out.putalpha(Image.fromarray(np.uint8(alpha * 255)))
-    if glyph and holes:
-        g = render._draw(size, holes, [], marks.GLYPH)
-        out.alpha_composite(g)
     return out
 
 
