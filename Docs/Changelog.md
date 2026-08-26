@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-26 (2)
+
+La app seguia sin arrancar con Windows: moria con "Qt6Widgets.dll was not found"
+antes de escribir una linea de log. El .exe de `build/` no tenia ninguna DLL al
+lado, asi que dependia del PATH para encontrar Qt, y la Run key lo lanza sin el
+PATH que arma el script de compilacion. Peor: cuando el PATH si tenia algo,
+cargaba Qt 6.8.2 y el runtime de MinGW que trae Git -- ni la version ni el
+compilador con los que se compila.
+
+`compilar.bat` ahora copia el runtime al lado del .exe con el mismo esquema que
+LinkRedirector (verificar -> copiar -> windeployqt -> re-verificar). Verificado
+lanzando el .exe con PATH de solo system32: carga Qt 6.5.3 y el MinGW correctos
+desde su propia carpeta.
+
+[commit sugerido: "fix: copiar el runtime de Qt al lado del exe, como LinkRedirector"]
+
 ## 2026-08-26
 
 Tres cosas del arranque y el empaquetado.
