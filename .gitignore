@@ -2,6 +2,7 @@
 build/
 build-release/
 deploy/
+installer/
 out/
 
 # Logs y config local de debug
@@ -32,3 +33,4 @@ tools/logo/opts.png
 tools/logo/ctx_*.png
 tools/logo/__pycache__/
 tools/logo/why.png
+tools/logo/exe_icon.png

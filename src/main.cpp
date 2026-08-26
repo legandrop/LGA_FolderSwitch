@@ -9,8 +9,8 @@
 #include <QFontDatabase>
 #include <QIcon>
 #include <QLockFile>
-#include <QMessageBox>
 #include <QSystemTrayIcon>
+#include <QThread>
 
 #include <objbase.h>
 #include <cstdlib>
@@ -124,11 +124,27 @@ int main(int argc, char *argv[])
         qssFile.close();
     }
 
+    // Al arrancar con Windows (Run key), el shell suele no tener la bandeja lista
+    // todavia: explorer.exe sigue inicializandose cuando ya nos lanzaron. Salir
+    // en ese momento era la razon por la que la app no aparecia despues de
+    // reiniciar, pero si andaba al abrirla a mano. Se espera a que aparezca.
+    constexpr int kTrayWaitMs = 90000;
+    constexpr int kTrayPollMs = 500;
+    int waitedMs = 0;
+    while (!QSystemTrayIcon::isSystemTrayAvailable() && waitedMs < kTrayWaitMs) {
+        QThread::msleep(kTrayPollMs);
+        waitedMs += kTrayPollMs;
+    }
     if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-        QMessageBox::critical(nullptr, "LGA FolderSwitch",
-                              "No system tray available in this session.");
+        // Nada de QMessageBox: es una app de bandeja, un modal al arranque no
+        // lo ve nadie y ademas dejaria el proceso colgado.
+        qWarning() << "No hay bandeja del sistema despues de esperar"
+                   << (kTrayWaitMs / 1000) << "s; se sale.";
         CoUninitialize();
         return 1;
+    }
+    if (waitedMs > 0) {
+        qInfo() << "La bandeja tardo" << waitedMs << "ms en estar disponible.";
     }
 
     TrayController tray;

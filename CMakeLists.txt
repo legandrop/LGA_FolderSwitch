@@ -27,6 +27,11 @@ set(RESOURCES
 if(WIN32)
     set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/LGA_FolderSwitch.ico")
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_icon.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/windows_icon.rc" @ONLY)
+    # El .rc solo NOMBRA al .ico, asi que cambiar el icono no cambia el .rc y
+    # windres no se volvia a correr: el exe se quedaba con el icono viejo.
+    # OBJECT_DEPENDS ata el .rc al .ico para que se recompile cuando cambia.
+    set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/windows_icon.rc"
+        PROPERTIES OBJECT_DEPENDS "${APP_ICON_RESOURCE_WINDOWS}")
     set(RESOURCES ${RESOURCES} "${CMAKE_CURRENT_BINARY_DIR}/windows_icon.rc")
 endif()
 

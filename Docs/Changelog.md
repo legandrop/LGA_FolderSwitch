@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-08-26
+
+Tres cosas del arranque y el empaquetado.
+
+La app no arrancaba con Windows aunque la Run key estaba bien puesta: al lanzarse
+desde el arranque el shell todavia no tiene lista la bandeja, `isSystemTrayAvailable()`
+daba false y `main` salia antes de loguear nada. Por eso andaba al abrirla a mano y no
+al reiniciar. Ahora espera hasta 90 s a que la bandeja aparezca, y no usa un
+QMessageBox modal, que nadie ve en el arranque.
+
+El .exe seguia con el icono viejo: el .rc solo NOMBRA al .ico, asi que cambiar el
+icono no cambiaba el .rc y windres nunca se recompilaba. Se ato con OBJECT_DEPENDS.
+
+Se agrego `deploy.bat` (arma `deploy/` con el runtime de Qt y MinGW) y
+`LGA_FolderSwitch_installer.iss` (Inno Setup), con tarea opcional de iniciar con
+Windows que escribe la MISMA entrada de registro que usa la UI de la app.
+
+[commit sugerido: "fix: esperar la bandeja al arrancar, icono del exe, e instalador"]
+
 ## 2026-08-25 (11)
 
 El path se escribia en el campo pero el browser de Nuke no aplicaba nada:
