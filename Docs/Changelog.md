@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-25 (11)
+
+El path se escribia en el campo pero el browser de Nuke no aplicaba nada:
+`ValuePattern::SetValue` cambia el texto sin disparar la senal de edicion del
+widget, asi que nadie se entera del cambio (a mano se veia igual: escribir un
+espacio y borrarlo lo destrababa). Ahora se escribe el path menos su ultimo
+caracter con SetValue y ese ultimo se tipea como tecla real via
+`SendInput`/`KEYEVENTF_UNICODE` -- unicode y no virtual-key porque la barra
+invertida cambia de lugar segun la distribucion de teclado. Queda el path exacto,
+con evento de edicion, y sin Enter ni boton: aceptar commitearia la carpeta como
+si fuera el archivo.
+
+[commit sugerido: "fix: tipear el ultimo caracter para que el dialogo Qt aplique el path"]
+
 ## 2026-08-25 (10)
 
 En el browser de Nuke, el camino de UI Automation escribia el path y ademas

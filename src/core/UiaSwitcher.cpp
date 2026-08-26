@@ -153,11 +153,23 @@ bool switchQtDialog(HWND dlg, const QString &folder)
     // (barras invertidas y barra final). No se re-normaliza aca.
     const QString &path = folder;
 
+    // SetValue cambia el texto pero NO dispara la senal de edicion del widget,
+    // asi que el browser de Nuke no se entera y no aplica nada. Una tecla real
+    // si la dispara. Por eso se escribe el path menos su ultimo caracter y ese
+    // ultimo se tipea: queda el path exacto, con evento de edicion, y sin Enter
+    // (cualquier "aceptar" commitearia la carpeta como si fuera el archivo).
+    const bool typeLastChar = path.size() > 1;
+    const QChar lastChar = typeLastChar ? path.at(path.size() - 1) : QChar();
+    QString seed = path;
+    if (typeLastChar) {
+        seed.chop(1);
+    }
+
     IUIAutomationValuePattern *targetValuePattern = nullptr;
     if (SUCCEEDED(targetEdit->GetCurrentPatternAs(UIA_ValuePatternId, IID_IUIAutomationValuePattern,
                                                     reinterpret_cast<void **>(&targetValuePattern))) &&
         targetValuePattern) {
-        BSTR bstrPath = SysAllocString(reinterpret_cast<const wchar_t *>(path.utf16()));
+        BSTR bstrPath = SysAllocString(reinterpret_cast<const wchar_t *>(seed.utf16()));
         HRESULT setHr = targetValuePattern->SetValue(bstrPath);
         if (bstrPath) SysFreeString(bstrPath);
         targetValuePattern->Release();
@@ -180,11 +192,25 @@ bool switchQtDialog(HWND dlg, const QString &folder)
         return false;
     }
 
-    // Se escribe el path y NADA MAS: ni Enter, ni el boton de aceptar.
-    // En el browser de Nuke cualquier "aceptar" commitea el texto como el
-    // archivo elegido, asi que con una carpeta el dialogo se cerraba eligiendo
-    // la carpeta como si fuera un archivo. Probado: pasa igual invocando "Open"
-    // que mandando Enter con el campo enfocado.
+    // Tipear el ultimo caracter con una tecla real, para que el widget emita su
+    // senal de edicion. Se manda como Unicode (KEYEVENTF_UNICODE) para no
+    // depender de la distribucion de teclado: la barra invertida esta en
+    // distinto lugar segun el layout.
+    if (typeLastChar && SUCCEEDED(targetEdit->SetFocus())) {
+        INPUT in[2] = {};
+        in[0].type = INPUT_KEYBOARD;
+        in[0].ki.wScan = static_cast<WORD>(lastChar.unicode());
+        in[0].ki.dwFlags = KEYEVENTF_UNICODE;
+        in[1] = in[0];
+        in[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+        const UINT sent = SendInput(2, in, sizeof(INPUT));
+        qDebug() << "[UiaSwitcher] Ultimo caracter tipeado:" << lastChar
+                 << (sent == 2 ? "ok" : "fallo");
+    } else if (typeLastChar) {
+        qWarning() << "[UiaSwitcher] No se pudo enfocar el campo; el path quedo"
+                   << "escrito pero puede que el dialogo no lo aplique.";
+    }
+
     targetEdit->Release();
     element->Release();
     automation->Release();
