@@ -10,13 +10,15 @@
 #include <QIcon>
 #include <QLockFile>
 #include <QSystemTrayIcon>
-#include <QThread>
+#include <QTimer>
 
 #include <objbase.h>
 #include <cstdlib>
 
 #include <QDateTime>
 #include <QTextStream>
+
+#include <functional>
 
 // Misma resolucion de config/ que las otras apps LGA: el exe corre desde build/,
 // los config y el debug.log viven en la raiz del repo.
@@ -125,30 +127,39 @@ int main(int argc, char *argv[])
     }
 
     // Al arrancar con Windows (Run key), el shell suele no tener la bandeja lista
-    // todavia: explorer.exe sigue inicializandose cuando ya nos lanzaron. Salir
-    // en ese momento era la razon por la que la app no aparecia despues de
-    // reiniciar, pero si andaba al abrirla a mano. Se espera a que aparezca.
+    // todavia: explorer.exe sigue inicializandose cuando ya nos lanzaron. Un loop
+    // bloqueante ANTES de app.exec() (QThread::msleep en el hilo principal) dejaba
+    // el proceso entero sin bombear mensajes de Windows durante toda la espera, y
+    // el shell lo mostraba colgado/sin respuesta en el arranque de sesion -- esa
+    // era la razon por la que la app no aparecia despues de reiniciar, aunque si
+    // andaba al abrirla a mano. El reintento ahora vive DENTRO del event loop de
+    // Qt: arranca junto con app.exec() y no bloquea nada.
     constexpr int kTrayWaitMs = 90000;
     constexpr int kTrayPollMs = 500;
-    int waitedMs = 0;
-    while (!QSystemTrayIcon::isSystemTrayAvailable() && waitedMs < kTrayWaitMs) {
-        QThread::msleep(kTrayPollMs);
-        waitedMs += kTrayPollMs;
-    }
-    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-        // Nada de QMessageBox: es una app de bandeja, un modal al arranque no
-        // lo ve nadie y ademas dejaria el proceso colgado.
-        qWarning() << "No hay bandeja del sistema despues de esperar"
-                   << (kTrayWaitMs / 1000) << "s; se sale.";
-        CoUninitialize();
-        return 1;
-    }
-    if (waitedMs > 0) {
-        qInfo() << "La bandeja tardo" << waitedMs << "ms en estar disponible.";
-    }
-
-    TrayController tray;
-    qInfo() << "LGA_FolderSwitch iniciado. Corriendo en bandeja.";
+    int trayWaitedMs = 0;
+    std::function<void()> pollTray;
+    pollTray = [&app, &trayWaitedMs, &pollTray]() {
+        if (QSystemTrayIcon::isSystemTrayAvailable()) {
+            if (trayWaitedMs > 0) {
+                qInfo() << "La bandeja tardo" << trayWaitedMs << "ms en estar disponible.";
+            }
+            auto *tray = new TrayController(&app);
+            Q_UNUSED(tray);
+            qInfo() << "LGA_FolderSwitch iniciado. Corriendo en bandeja.";
+            return;
+        }
+        if (trayWaitedMs >= kTrayWaitMs) {
+            // Nada de QMessageBox: es una app de bandeja, un modal al arranque no
+            // lo ve nadie y ademas dejaria el proceso colgado.
+            qWarning() << "No hay bandeja del sistema despues de esperar"
+                       << (kTrayWaitMs / 1000) << "s; se sale.";
+            QCoreApplication::exit(1);
+            return;
+        }
+        trayWaitedMs += kTrayPollMs;
+        QTimer::singleShot(kTrayPollMs, qApp, pollTray);
+    };
+    QTimer::singleShot(0, qApp, pollTray);
 
     const int rc = app.exec();
     CoUninitialize();

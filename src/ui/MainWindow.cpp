@@ -3,6 +3,7 @@
 
 #include <QCheckBox>
 #include <QCloseEvent>
+#include <QDebug>
 #include <QFontMetrics>
 #include <QLabel>
 #include <QSettings>
@@ -108,7 +109,14 @@ void MainWindow::setLastDetectedFolder(const QString &folder)
 
 void MainWindow::onAutoStartToggled(bool checked)
 {
-    AutoStart::setEnabled(checked);
+    const bool ok = AutoStart::setEnabled(checked);
+    qInfo() << "[MainWindow] AutoStart" << (checked ? "ON" : "OFF") << "ok:" << ok;
+    if (!ok) {
+        // Revertir el visual si fallo.
+        m_autoStartCheck->blockSignals(true);
+        m_autoStartCheck->setChecked(AutoStart::isEnabled());
+        m_autoStartCheck->blockSignals(false);
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
