@@ -11,6 +11,7 @@ class QMenu;
 class MainWindow;
 class ForegroundWatcher;
 class HotkeyFilter;
+class UpdateService;
 
 // Maneja el icono de la bandeja del sistema, la ventana de Settings, y la logica
 // central de deteccion (Explorer/XYplorer -> file dialog) + inyeccion de path.
@@ -33,6 +34,7 @@ private slots:
     void quit();
     void onForegroundChanged(quintptr hwnd);
     void onHotkeyPressed();
+    void checkForUpdatesManual();
 
 private:
     enum class ManagerType { None, Explorer, XYplorer };
@@ -49,6 +51,7 @@ private:
     MainWindow *m_window = nullptr;
     ForegroundWatcher *m_foregroundWatcher = nullptr;
     HotkeyFilter *m_hotkeyFilter = nullptr;
+    UpdateService *m_updateService = nullptr;
 
     // Estado del ultimo manager (Explorer/XYplorer) visto en foreground.
     HWND m_lastManagerHwnd = nullptr;

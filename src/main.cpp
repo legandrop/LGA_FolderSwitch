@@ -70,9 +70,28 @@ static void fileMessageHandler(QtMsgType, const QMessageLogContext &, const QStr
     out.flush();
 }
 
+namespace {
+
+/**
+ * Marcador de version embebido en el binario. Lo lee un guard de instalador (findstr
+ * sobre el exe) para verificar QUE VERSION quedo compilada antes de empaquetar,
+ * taggear y publicar. Mismo mecanismo que LGA_MediaTools_v2 (ver kBuildVersionMarker
+ * en su main.cpp).
+ *
+ * DOS condiciones que no se pueden romper sin romper el guard:
+ *  - Literal NARROW (char[], no QStringLiteral/QString): un findstr sobre el exe
+ *    busca bytes ASCII/UTF-8, y un literal UTF-16 no aparece.
+ *  - REFERENCIADO: sin uso, el linker lo descarta. El qDebug() de abajo lo referencia
+ *    y de paso deja la version compilada en el log.
+ */
+static const char kBuildVersionMarker[] = "LGA_FOLDERSWITCH_BUILD_VERSION=" FOLDERSWITCH_VERSION;
+
+} // namespace
+
 int main(int argc, char *argv[])
 {
     qInstallMessageHandler(fileMessageHandler);
+    qDebug() << kBuildVersionMarker;
     QApplication app(argc, argv);
     app.setStyle("Fusion");
 

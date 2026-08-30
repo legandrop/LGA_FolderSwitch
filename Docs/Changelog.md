@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-08-30
+
+Faltaba el circuito de publicacion y actualizacion que ya tienen las otras apps.
+Como este repo es publico, las releases van al mismo repo (no hay repo _Release
+aparte) y el slug se dio de alta en `repos.json` de LGA_Updates.
+
+`instalador.bat` nuevo, calcado del de MediaTools_v2: preflight de git/gh, deploy,
+guard de que el binario lleve la version del CMakeLists (unica fuente; el .iss la
+recibe por `/DMyAppVersion`), Inno Setup, y tag + release en GitHub con refresco
+del manifiesto.
+
+Auto-update dentro de la app: `UpdateService` (version reducida del de
+FileManagerS3) lee el manifiesto de LGA_Updates, compara con `VersionCompare`
+(copia fiel de FM), descarga con progreso, verifica SHA-256 fail-closed y lanza
+el instalador. Chequeo automatico al arrancar y "Check for Updates..." en el tray.
+`compilar.bat`/`deploy.bat` suman Qt6Network y el plugin TLS.
+
+[commit sugerido: "feat: instalador con release en GitHub y auto-update desde el manifiesto"]
+
 ## 2026-08-26 (2)
 
 La app seguia sin arrancar con Windows: moria con "Qt6Widgets.dll was not found"

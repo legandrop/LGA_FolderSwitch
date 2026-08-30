@@ -18,7 +18,7 @@ set(CMAKE_AUTOUIC ON)
 
 set(CMAKE_PREFIX_PATH "C:/Qt/6.5.3/mingw_64")
 
-find_package(Qt6 COMPONENTS Core Gui Widgets Svg REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets Svg Network REQUIRED)
 
 set(RESOURCES
     resources/resources.qrc
@@ -47,6 +47,8 @@ set(SOURCES
     src/core/WindowUtils.cpp
     src/windows/AutoStart.cpp
     src/windows/RegistryHelper.cpp
+    src/updates/UpdateService.cpp
+    src/updates/VersionCompare.cpp
 )
 
 set(HEADERS
@@ -60,6 +62,8 @@ set(HEADERS
     src/core/WindowUtils.h
     src/windows/AutoStart.h
     src/windows/RegistryHelper.h
+    src/updates/UpdateService.h
+    src/updates/VersionCompare.h
 )
 
 add_executable(${PROJECT_NAME}
@@ -73,6 +77,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Gui
     Qt6::Widgets
     Qt6::Svg
+    Qt6::Network
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

@@ -41,12 +41,19 @@ echo Copiando runtime Qt y MinGW (dependencias directas del exe)...
 copy /Y "%QT_DIR%\bin\Qt6Core.dll" deploy\ >nul
 copy /Y "%QT_DIR%\bin\Qt6Gui.dll" deploy\ >nul
 copy /Y "%QT_DIR%\bin\Qt6Widgets.dll" deploy\ >nul
+copy /Y "%QT_DIR%\bin\Qt6Network.dll" deploy\ >nul
 copy /Y "%MINGW_BIN%\libgcc_s_seh-1.dll" deploy\ >nul
 copy /Y "%MINGW_BIN%\libstdc++-6.dll" deploy\ >nul
 copy /Y "%MINGW_BIN%\libwinpthread-1.dll" deploy\ >nul
 
 if not exist deploy\platforms mkdir deploy\platforms
 copy /Y "%QT_DIR%\plugins\platforms\qwindows.dll" deploy\platforms\ >nul
+
+REM Plugin TLS: sin el, QNetworkAccessManager no puede hacer HTTPS (falla en
+REM silencio en el deploy portable, aunque el mismo exe ande bien corriendo
+REM desde el arbol de Qt). Lo necesita el chequeo de updates.
+if not exist deploy\tls mkdir deploy\tls
+copy /Y "%QT_DIR%\plugins\tls\qschannelbackend.dll" deploy\tls\ >nul
 
 set PATH=%PATH%;%QT_DIR%\bin;%MINGW_BIN%
 
@@ -74,10 +81,12 @@ set DEPS_MISSING=false
 if not exist "deploy\Qt6Core.dll" set DEPS_MISSING=true
 if not exist "deploy\Qt6Gui.dll" set DEPS_MISSING=true
 if not exist "deploy\Qt6Widgets.dll" set DEPS_MISSING=true
+if not exist "deploy\Qt6Network.dll" set DEPS_MISSING=true
 if not exist "deploy\libgcc_s_seh-1.dll" set DEPS_MISSING=true
 if not exist "deploy\libstdc++-6.dll" set DEPS_MISSING=true
 if not exist "deploy\libwinpthread-1.dll" set DEPS_MISSING=true
 if not exist "deploy\platforms\qwindows.dll" set DEPS_MISSING=true
+if not exist "deploy\tls\qschannelbackend.dll" set DEPS_MISSING=true
 
 if "%DEPS_MISSING%"=="true" (
     echo ERROR: faltan dependencias criticas de Qt en deploy\. Verifica la instalacion de Qt 6.5.3 mingw_64.

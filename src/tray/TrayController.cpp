@@ -5,6 +5,7 @@
 #include "core/WindowUtils.h"
 #include "core/FolderResolver.h"
 #include "core/DialogSwitcher.h"
+#include "updates/UpdateService.h"
 
 #include <QAction>
 #include <QApplication>
@@ -63,8 +64,11 @@ TrayController::TrayController(QObject *parent)
     m_menu = new QMenu();
     QAction *openAction = m_menu->addAction(QStringLiteral("Open Settings"));
     m_menu->addSeparator();
+    QAction *checkForUpdatesAction = m_menu->addAction(QStringLiteral("Check for Updates..."));
+    m_menu->addSeparator();
     QAction *quitAction = m_menu->addAction(QStringLiteral("Quit"));
     connect(openAction, &QAction::triggered, this, &TrayController::showSettings);
+    connect(checkForUpdatesAction, &QAction::triggered, this, &TrayController::checkForUpdatesManual);
     connect(quitAction, &QAction::triggered, this, &TrayController::quit);
 
     m_tray = new QSystemTrayIcon(this);
@@ -87,6 +91,11 @@ TrayController::TrayController(QObject *parent)
     m_hotkeyFilter = new HotkeyFilter(this);
     connect(m_hotkeyFilter, &HotkeyFilter::hotkeyPressed, this, &TrayController::onHotkeyPressed);
     QCoreApplication::instance()->installNativeEventFilter(m_hotkeyFilter);
+
+    // parentWindow es m_window (normalmente oculto): sus dialogos de resultado
+    // igual se centran en pantalla al no tener un padre visible.
+    m_updateService = new UpdateService(m_window, this);
+    m_updateService->scheduleAutomaticCheck();
 }
 
 void TrayController::applyTrayIcon()
@@ -136,6 +145,13 @@ void TrayController::onTrayActivated(int reason)
 void TrayController::quit()
 {
     qApp->quit();
+}
+
+void TrayController::checkForUpdatesManual()
+{
+    if (m_updateService) {
+        m_updateService->checkForUpdates(true);
+    }
 }
 
 QString TrayController::resolveLastManagerPath() const
