@@ -7,6 +7,7 @@
 #include <QFontMetrics>
 #include <QLabel>
 #include <QSettings>
+#include <QShowEvent>
 #include <QVBoxLayout>
 
 namespace {
@@ -79,7 +80,28 @@ void MainWindow::loadSettings()
 
     m_autoSwitchCheck->setChecked(autoSwitch);
     m_enabledCheck->setChecked(enabled);
+    syncAutoStartCheck();
+}
+
+void MainWindow::syncAutoStartCheck()
+{
+    if (!m_autoStartCheck) {
+        return;
+    }
+    // Con las senales bloqueadas: reflejar el estado no es activarlo. Sin esto,
+    // setChecked(true) disparaba onAutoStartToggled y reescribia el registro en
+    // cada arranque de la app.
+    m_autoStartCheck->blockSignals(true);
     m_autoStartCheck->setChecked(AutoStart::isEnabled());
+    m_autoStartCheck->blockSignals(false);
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    // Estado real en cada apertura: un cambio hecho por fuera (Task Manager >
+    // Startup, otra copia de la app, un instalador) tiene que verse sin reiniciar.
+    syncAutoStartCheck();
+    QMainWindow::showEvent(event);
 }
 
 bool MainWindow::autoSwitchEnabled() const
@@ -112,10 +134,7 @@ void MainWindow::onAutoStartToggled(bool checked)
     const bool ok = AutoStart::setEnabled(checked);
     qInfo() << "[MainWindow] AutoStart" << (checked ? "ON" : "OFF") << "ok:" << ok;
     if (!ok) {
-        // Revertir el visual si fallo.
-        m_autoStartCheck->blockSignals(true);
-        m_autoStartCheck->setChecked(AutoStart::isEnabled());
-        m_autoStartCheck->blockSignals(false);
+        syncAutoStartCheck(); // revertir el visual si fallo
     }
 }
 

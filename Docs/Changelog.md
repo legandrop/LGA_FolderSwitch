@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-03
+
+La app no arrancaba con Windows: en la clave `Run` del registro no quedaba ninguna
+entrada `LGA_FolderSwitch`. El instalador escribia esa MISMA entrada con la ruta
+instalada (pisando la que la app habia puesto para la copia de `build/`) y la
+borraba al desinstalar, apuntara a donde apuntara. En LinkRedirector y FrameRev el
+instalador no toca `Run`: la maneja solo la app. Ahora el `.iss` no la escribe; una
+copia instalada activa el inicio sola en su primer arranque (patron de FrameRev;
+desde `build/` o `deploy/` no). `AutoStart` ademas limpia el "deshabilitado" de
+Task Manager > Startup, y el checkbox relee el estado real al abrirse.
+
+El log tampoco ayudaba: el primer mensaje sale antes de la QApplication, `config/`
+se resolvia contra el directorio de trabajo, y lanzada por `Run` (cwd = System32)
+no escribia nada. La ruta ahora sale de `GetModuleFileName` y al arrancar se
+loguean el exe y el estado del inicio automatico. Patron documentado en
+`LGA_Base_QT_C_Py/docs/Doc_Autostart_Windows.md`.
+
+[commit sugerido: "fix: la entrada Run la maneja solo la app, y el log sirve al arrancar con Windows"]
+
 ## 2026-08-30
 
 Faltaba el circuito de publicacion y actualizacion que ya tienen las otras apps.

@@ -6,6 +6,7 @@
 #include "core/FolderResolver.h"
 #include "core/DialogSwitcher.h"
 #include "updates/UpdateService.h"
+#include "windows/AutoStart.h"
 
 #include <QAction>
 #include <QApplication>
@@ -96,6 +97,31 @@ TrayController::TrayController(QObject *parent)
     // igual se centran en pantalla al no tener un padre visible.
     m_updateService = new UpdateService(m_window, this);
     m_updateService->scheduleAutomaticCheck();
+
+    runFirstLaunchSetupIfNeeded();
+}
+
+// Antes esto lo hacia el instalador escribiendo la clave Run con la ruta instalada.
+// Con el MISMO nombre de valor que usa la app, pisaba la entrada de la copia de
+// build/ y la borraba al desinstalar: asi se perdio el inicio con Windows. Ahora la
+// entrada la maneja solo la app (LinkRedirector nunca dejo que el instalador la
+// toque) y el "activado por defecto al instalar" pasa a este primer arranque, como
+// en FrameRev. La marca se guarda SOLO cuando corre una copia instalada: un
+// arranque desde build/ no consume el primer arranque de la instalacion futura.
+void TrayController::runFirstLaunchSetupIfNeeded()
+{
+    if (AutoStart::runsFromDevelopmentTree()) {
+        return;
+    }
+    QSettings settings(QStringLiteral("LGA"), QStringLiteral("FolderSwitch"));
+    if (settings.value(QStringLiteral("firstRunCompleted"), false).toBool()) {
+        return;
+    }
+    settings.setValue(QStringLiteral("firstRunCompleted"), true);
+
+    const bool ok = AutoStart::setEnabled(true);
+    qInfo() << "[TrayController] Primer arranque: inicio con Windows activado ok:" << ok;
+    showSettings();
 }
 
 void TrayController::applyTrayIcon()

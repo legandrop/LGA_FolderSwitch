@@ -90,6 +90,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     FOLDERSWITCH_VERSION="${PROJECT_VERSION}"
+    # Arboles de desarrollo, para que AutoStart::runsFromDevelopmentTree() reconozca
+    # esta salida aunque la carpeta no se llame build/ (mismo cableado que LgaRegistry
+    # en FrameRev, ver LGA_Base_QT_C_Py/docs/Doc_Autostart_Windows.md).
+    LGA_BUILD_TREE_DIR="${CMAKE_BINARY_DIR}"
+    LGA_SOURCE_TREE_DIR="${CMAKE_SOURCE_DIR}"
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

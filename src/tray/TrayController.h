@@ -40,6 +40,9 @@ private:
     enum class ManagerType { None, Explorer, XYplorer };
 
     void applyTrayIcon();
+    // Primer arranque de una copia INSTALADA: activa el inicio con Windows una sola
+    // vez y abre Settings para que se vea. Desde build/ o deploy/ no hace nada.
+    void runFirstLaunchSetupIfNeeded();
     // Resuelve el path fresco del ultimo manager guardado (si sigue vivo).
     QString resolveLastManagerPath() const;
     // Programa (con delay) la inyeccion de path en el dialogo dado.

@@ -29,6 +29,7 @@ signals:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private slots:
     void onAutoStartToggled(bool checked);
@@ -36,6 +37,8 @@ private slots:
 private:
     void buildUi();
     void loadSettings();
+    // Refleja el estado REAL del inicio con Windows sin disparar toggled().
+    void syncAutoStartCheck();
 
     QLabel *m_statusLabel = nullptr;
     QCheckBox *m_autoSwitchCheck = nullptr;

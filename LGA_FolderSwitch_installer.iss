@@ -29,7 +29,6 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostart"; Description: "Iniciar {#MyAppName} con Windows"; GroupDescription: "Opciones adicionales"; Flags: checkedonce
 
 [Files]
 Source: "deploy\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -38,8 +37,12 @@ Source: "deploy\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs create
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
-[Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "LGA_FolderSwitch"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: autostart
+; SIN seccion [Registry] a proposito. El inicio con Windows (HKCU\...\Run) lo maneja
+; SOLO la app: la copia instalada lo activa sola en su primer arranque, y el checkbox
+; de Settings lo prende/apaga. Cuando lo escribia el instalador, con el mismo nombre
+; de valor que usa la app, pisaba la entrada que apuntaba a otra copia y la borraba al
+; desinstalar (uninsdeletevalue): asi se perdio el inicio con Windows. LinkRedirector
+; nunca dejo que el instalador la toque. Ver LGA_Base_QT_C_Py/docs/Doc_Autostart_Windows.md.
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
