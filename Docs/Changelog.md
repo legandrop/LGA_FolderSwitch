@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-04 (2)
+
+La entrada de `Run` nunca existio en el registro real, y por eso ningun reinicio la
+ejecuto. Las escrituras "a mano" se habian hecho desde una terminal empaquetada en
+MSIX (la app de escritorio de Claude Code), que tiene registro virtualizado por
+paquete: la escritura va a un hive privado, releerla desde ahi la muestra puesta, y
+Windows no la ve. El sintoma que lo delato: la app abierta por el usuario loguea
+`valor en Run: "(ninguno)"` y la misma app lanzada desde esa terminal loguea el valor.
+
+El checkbox "Iniciar con Windows" vuelve a estar HABILITADO desde un build: el click
+del usuario es la unica via que escribe donde Windows lee, y el cambio anterior la
+habia tapado. Lo que sigue prohibido desde un arbol de desarrollo es la escritura
+AUTOMATICA (primer arranque), que es la que puede pisar la entrada sola. El toggle
+ahora loguea el valor que quedo en el registro, para poder verificarlo desde afuera.
+
+[commit sugerido: "fix: el checkbox de inicio con Windows vuelve a ser clickeable desde un build"]
+
 ## 2026-09-04
 
 Seguia sin arrancar con Windows despues del arreglo anterior. El log de arranque del

@@ -51,17 +51,28 @@ void MainWindow::buildUi()
     });
     layout->addWidget(m_autoSwitchCheck);
 
-    // Mismo cableado que FrameRev (src/ui/mainwindow/MainWindow.cpp): estado REAL del sistema,
-    // deshabilitado donde este binario no puede activarlo (salida de desarrollo, ver
-    // AutoStart::availability()) con el motivo en el tooltip, y el connect DESPUES del
-    // setChecked inicial para que ese primer estado no dispare una escritura al registro.
+    // Cableado tomado de FrameRev (src/ui/mainwindow/MainWindow.cpp): estado REAL del sistema
+    // leido en vivo, y el connect DESPUES del setChecked inicial para que ese primer estado no
+    // dispare una escritura al registro.
+    //
+    // A diferencia de FrameRev, el checkbox queda HABILITADO tambien desde una salida de
+    // desarrollo. La distincion que importa no es quien corre, sino QUIEN DECIDE:
+    //  - Escritura AUTOMATICA desde un build (primer arranque, reflejar estado): PROHIBIDA.
+    //    Es la que puede pisar o borrar sola la entrada -- el bug que dejo a esta app sin
+    //    arrancar. La bloquea AutoStart::availability() en runFirstLaunchSetupIfNeeded().
+    //  - Click EXPLICITO del usuario: permitido siempre. Ademas es la UNICA forma de
+    //    registrar una copia de `build/`: escribir la clave Run desde una terminal que corra
+    //    dentro de un contenedor MSIX (la app de escritorio de Claude Code, por ejemplo) va a
+    //    un registro VIRTUALIZADO por paquete, invisible para Windows -- la entrada parece
+    //    puesta y el sistema nunca la ejecuta. Solo la app, que corre fuera de ese
+    //    contenedor, escribe donde Windows lee. Medido el 2026-09-04; ver
+    //    ../LGA_Base_QT_C_Py/docs/Doc_Autostart_Windows.md.
     m_autoStartCheck = new QCheckBox(QStringLiteral("Iniciar con Windows"), central);
     m_autoStartCheck->setChecked(AutoStart::isEnabled());
-    const AutoStart::Availability autoStartAvailability = AutoStart::availability();
-    m_autoStartCheck->setEnabled(autoStartAvailability.available);
-    m_autoStartCheck->setToolTip(autoStartAvailability.available
-                                     ? QStringLiteral("Inicia LGA FolderSwitch al iniciar sesión")
-                                     : QStringLiteral("No disponible desde un build de desarrollo"));
+    m_autoStartCheck->setToolTip(
+        AutoStart::availability().available
+            ? QStringLiteral("Inicia LGA FolderSwitch al iniciar sesión")
+            : QStringLiteral("Registra ESTA copia de desarrollo para iniciar con la sesión"));
     connect(m_autoStartCheck, &QCheckBox::toggled, this, &MainWindow::onAutoStartToggled);
     layout->addWidget(m_autoStartCheck);
 
@@ -141,7 +152,12 @@ void MainWindow::setLastDetectedFolder(const QString &folder)
 void MainWindow::onAutoStartToggled(bool checked)
 {
     const bool ok = AutoStart::setEnabled(checked);
-    qInfo() << "[MainWindow] AutoStart" << (checked ? "ON" : "OFF") << "ok:" << ok;
+    // Se loguea el valor que QUEDO en el registro, no solo el resultado de la escritura: es
+    // la unica evidencia de que la entrada aterrizo donde Windows la lee.
+    qInfo() << "[MainWindow] AutoStart" << (checked ? "ON" : "OFF") << "ok:" << ok
+            << "| valor en Run ahora:"
+            << (AutoStart::storedCommand().isEmpty() ? QStringLiteral("(ninguno)")
+                                                     : AutoStart::storedCommand());
     if (!ok) {
         syncAutoStartCheck(); // revertir el visual si fallo
     }
