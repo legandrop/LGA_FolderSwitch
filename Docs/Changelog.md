@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-04
+
+Seguia sin arrancar con Windows despues del arreglo anterior. El log de arranque del
+sistema (`Microsoft-Windows-Shell-Core/Operational`, eventos 9707) mostro la clave
+`Run` ejecutandose entera —Seer, GoogleDrive, StreamDeck, LinkRedirector y FrameRev—
+sin un solo intento de FolderSwitch. La entrada de FrameRev sobrevive porque FrameRev
+nunca la toca desde `build/`; la de FolderSwitch no sobrevivia porque la app la
+reescribia en cada arranque.
+
+`AutoStart` pasa a ser copia del modulo de FrameRev: `availability()` bloquea escribir
+al registro desde `build*`/`deploy*` o el arbol del repo, el checkbox queda
+deshabilitado ahi con el motivo en el tooltip, y el `connect` va despues del
+`setChecked` inicial para que reflejar el estado no dispare una escritura. Verificado:
+la app arranca y la entrada queda byte a byte igual.
+
+[commit sugerido: "fix: AutoStart copiado de FrameRev, sin escribir en el registro desde un build"]
+
 ## 2026-09-03
 
 La app no arrancaba con Windows: en la clave `Run` del registro no quedaba ninguna

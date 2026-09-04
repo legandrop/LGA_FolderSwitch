@@ -51,7 +51,17 @@ void MainWindow::buildUi()
     });
     layout->addWidget(m_autoSwitchCheck);
 
+    // Mismo cableado que FrameRev (src/ui/mainwindow/MainWindow.cpp): estado REAL del sistema,
+    // deshabilitado donde este binario no puede activarlo (salida de desarrollo, ver
+    // AutoStart::availability()) con el motivo en el tooltip, y el connect DESPUES del
+    // setChecked inicial para que ese primer estado no dispare una escritura al registro.
     m_autoStartCheck = new QCheckBox(QStringLiteral("Iniciar con Windows"), central);
+    m_autoStartCheck->setChecked(AutoStart::isEnabled());
+    const AutoStart::Availability autoStartAvailability = AutoStart::availability();
+    m_autoStartCheck->setEnabled(autoStartAvailability.available);
+    m_autoStartCheck->setToolTip(autoStartAvailability.available
+                                     ? QStringLiteral("Inicia LGA FolderSwitch al iniciar sesión")
+                                     : QStringLiteral("No disponible desde un build de desarrollo"));
     connect(m_autoStartCheck, &QCheckBox::toggled, this, &MainWindow::onAutoStartToggled);
     layout->addWidget(m_autoStartCheck);
 
@@ -80,7 +90,6 @@ void MainWindow::loadSettings()
 
     m_autoSwitchCheck->setChecked(autoSwitch);
     m_enabledCheck->setChecked(enabled);
-    syncAutoStartCheck();
 }
 
 void MainWindow::syncAutoStartCheck()

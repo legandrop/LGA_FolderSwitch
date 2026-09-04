@@ -101,24 +101,29 @@ TrayController::TrayController(QObject *parent)
     runFirstLaunchSetupIfNeeded();
 }
 
-// Antes esto lo hacia el instalador escribiendo la clave Run con la ruta instalada.
-// Con el MISMO nombre de valor que usa la app, pisaba la entrada de la copia de
-// build/ y la borraba al desinstalar: asi se perdio el inicio con Windows. Ahora la
-// entrada la maneja solo la app (LinkRedirector nunca dejo que el instalador la
-// toque) y el "activado por defecto al instalar" pasa a este primer arranque, como
-// en FrameRev. La marca se guarda SOLO cuando corre una copia instalada: un
-// arranque desde build/ no consume el primer arranque de la instalacion futura.
+// Copia de MainWindow::runFirstLaunchSetupIfNeeded() de FrameRev: el "se abre con Windows
+// por defecto" se activa DE VERDAD en el primer arranque de una copia instalada, y no lo
+// escribe el instalador. Cuando lo escribia el instalador (con el MISMO nombre de valor que
+// usa la app) pisaba la entrada de la copia de build/ y la borraba al desinstalar; asi se
+// perdio el inicio con Windows de esta app. La marca se guarda SOLO cuando corre una copia
+// instalada: un arranque desde build/ no consume el primer arranque de la instalacion futura.
 void TrayController::runFirstLaunchSetupIfNeeded()
 {
-    if (AutoStart::runsFromDevelopmentTree()) {
-        return;
-    }
     QSettings settings(QStringLiteral("LGA"), QStringLiteral("FolderSwitch"));
     if (settings.value(QStringLiteral("firstRunCompleted"), false).toBool()) {
         return;
     }
-    settings.setValue(QStringLiteral("firstRunCompleted"), true);
 
+    const AutoStart::Availability availability = AutoStart::availability();
+    if (!availability.available) {
+        // Desde una salida de desarrollo no se toca el registro NI se consume el primer
+        // arranque: la instalacion futura tiene que conservarlo.
+        qInfo() << "[TrayController] Primer arranque: no se activa el inicio automatico ("
+                << availability.text << ")";
+        return;
+    }
+
+    settings.setValue(QStringLiteral("firstRunCompleted"), true);
     const bool ok = AutoStart::setEnabled(true);
     qInfo() << "[TrayController] Primer arranque: inicio con Windows activado ok:" << ok;
     showSettings();

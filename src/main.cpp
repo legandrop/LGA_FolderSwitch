@@ -96,7 +96,8 @@ static void logStartupDiagnostics()
 {
     const QString stored = AutoStart::storedCommand();
     qInfo() << "Exe:" << QDir::toNativeSeparators(QCoreApplication::applicationFilePath())
-            << "| arbol de desarrollo:" << AutoStart::runsFromDevelopmentTree();
+            << "| arbol de desarrollo:" << AutoStart::runsFromDevelopmentTree()
+            << "| se puede activar desde aca:" << AutoStart::availability().available;
     qInfo() << "Inicio con Windows:" << (AutoStart::isEnabled() ? "activo" : "inactivo")
             << "| valor en Run:" << (stored.isEmpty() ? QStringLiteral("(ninguno)") : stored)
             << "| deshabilitado en Task Manager:" << AutoStart::disabledByTaskManager();

@@ -7,54 +7,35 @@
 
 namespace {
 
-const QString kRunKey = "Software\Microsoft\Windows\CurrentVersion\Run";
-// Donde Task Manager > Startup guarda lo que el usuario deshabilito. Un valor de Run
-// con esta marca existe pero Windows no lo lanza: sin mirarla, la app diria "activo"
-// y nunca arrancaria.
-const QString kStartupApprovedKey =
-    "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+const QString kRunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 const QString kValueName = "LGA_FolderSwitch";
 
-QString currentExeNative()
-{
-    return QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
-}
+// Donde Task Manager > Startup guarda lo que el usuario deshabilito. Solo se lee, para el
+// diagnostico del log: un valor de Run con marca impar existe pero Windows no lo lanza.
+const QString kStartupApprovedKey =
+    "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
 
-// Entre comillas dobles para que sobreviva a rutas con espacios.
-QString currentExeQuoted()
-{
-    return "\"" + currentExeNative() + "\"";
-}
-
-// Borra puntualmente el valor kValueName de una subclave de HKCU, sin tocar el resto.
-bool deleteValue(const QString &subKey)
-{
-    const std::wstring sub = subKey.toStdWString();
-    HKEY hKey = nullptr;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, sub.c_str(), 0, KEY_SET_VALUE, &hKey) != ERROR_SUCCESS) {
-        return true; // no existe la clave: nada que borrar
-    }
-    const std::wstring val = kValueName.toStdWString();
-    LONG rc = RegDeleteValueW(hKey, val.c_str());
-    RegCloseKey(hKey);
-    return rc == ERROR_SUCCESS || rc == ERROR_FILE_NOT_FOUND;
-}
-
-// Si `appPath` (limpio, con '/') cuelga de `rootDirLiteral`. Se compara por
-// componente de ruta: un startsWith pelado haria que C:/x/build2 cuente como
-// adentro de C:/x/build.
+// Si `appPath` (limpio, con '/') cuelga de `rootDirLiteral`. Se compara por COMPONENTE de
+// ruta: un `startsWith` a secas haria que `C:/x/build2` cuente como adentro de `C:/x/build`.
 bool pathIsInside(const QString &appPath, const char *rootDirLiteral)
 {
     const QString rootDir = QDir::cleanPath(QDir::fromNativeSeparators(QLatin1String(rootDirLiteral)));
     if (rootDir.isEmpty()) {
         return false;
     }
+    // En Windows la misma ruta puede llegar con distinta capitalizacion (`C:` vs `c:`).
     return appPath.startsWith(rootDir + QLatin1Char('/'), Qt::CaseInsensitive);
 }
 
 } // namespace
 
 namespace AutoStart {
+
+QString currentExeQuoted()
+{
+    const QString exe = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
+    return "\"" + exe + "\"";
+}
 
 QString storedCommand()
 {
@@ -84,33 +65,33 @@ bool isEnabled()
         return false;
     }
     // Habilitado solo si el valor guardado apunta al ejecutable ACTUAL.
-    if (!stored.contains(currentExeNative(), Qt::CaseInsensitive)) {
-        return false;
-    }
-    return !disabledByTaskManager();
+    return stored.contains(QDir::toNativeSeparators(QCoreApplication::applicationFilePath()),
+                           Qt::CaseInsensitive);
 }
 
 bool setEnabled(bool enabled)
 {
     if (enabled) {
-        if (!RegistryHelper::writeString(HKEY_CURRENT_USER, kRunKey, kValueName, currentExeQuoted())) {
-            return false;
-        }
-        // Si el usuario lo habia apagado desde Task Manager, la marca sigue ahi y
-        // Windows no lanzaria el valor recien escrito. Borrarla es lo mismo que hace
-        // Task Manager al volver a habilitarlo.
-        return deleteValue(kStartupApprovedKey);
+        return RegistryHelper::writeString(HKEY_CURRENT_USER, kRunKey, kValueName, currentExeQuoted());
     }
     // Desactivar = borrar puntualmente ESTE valor, sin tocar el resto de la clave Run.
-    return deleteValue(kRunKey);
+    const std::wstring sub = kRunKey.toStdWString();
+    HKEY hKey = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, sub.c_str(), 0, KEY_SET_VALUE, &hKey) != ERROR_SUCCESS) {
+        return true; // no existe la clave: nada que borrar
+    }
+    const std::wstring val = kValueName.toStdWString();
+    LONG rc = RegDeleteValueW(hKey, val.c_str());
+    RegCloseKey(hKey);
+    return rc == ERROR_SUCCESS || rc == ERROR_FILE_NOT_FOUND;
 }
 
 bool runsFromDevelopmentTree()
 {
     const QString appPath =
         QDir::cleanPath(QDir::fromNativeSeparators(QCoreApplication::applicationFilePath()));
-    // Solo la carpeta que CONTIENE al exe, no la ruta entera: D:\Builds\Apps\X.exe es
-    // una instalacion legitima. `contains` y no `startsWith` para que entre
+    // Solo la carpeta que CONTIENE al exe, nunca la ruta entera: `D:\Builds\Apps\X.exe` es una
+    // instalacion legitima y su carpeta es `Apps`. `contains` y no `startsWith` para que entre
     // `build-release` y cualquier variante.
     const QString folder = QFileInfo(appPath).dir().dirName();
     if (folder.contains(QLatin1String("build"), Qt::CaseInsensitive)
@@ -128,6 +109,15 @@ bool runsFromDevelopmentTree()
     }
 #endif
     return false;
+}
+
+Availability availability()
+{
+    if (runsFromDevelopmentTree()) {
+        return {false, Unavailability::DevelopmentTree,
+                QStringLiteral("Not available from a development build")};
+    }
+    return {true, Unavailability::None, QString()};
 }
 
 } // namespace AutoStart
