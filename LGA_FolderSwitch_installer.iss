@@ -35,7 +35,9 @@ Source: "deploy\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs create
 
 ; Inno solo desinstala los archivos que copio el. El unico que la app escribe en {app} es
 ; debug.log (se prende con log=true en config\debug_flags.txt): sin esta seccion queda
-; huerfano y la carpeta no se borra. La config chica vive en AppData y sobrevive a proposito.
+; huerfano y la carpeta no se borra. La config chica no vive en disco: FolderSwitch la guarda
+; con QSettings en formato nativo, o sea en el registro (HKCU\Software\LGA\FolderSwitch), y el
+; desinstalador no la toca a proposito para que sobreviva a una reinstalacion.
 [UninstallDelete]
 Type: files; Name: "{app}\debug.log"
 

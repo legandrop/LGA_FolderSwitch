@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-17 (2)
+
+El comentario que acompana la seccion `[UninstallDelete]` del `.iss` decia que la
+config chica de FolderSwitch vive en AppData. No es cierto: la app la guarda con
+`QSettings(QStringLiteral("LGA"), QStringLiteral("FolderSwitch"))`, o sea en formato
+nativo, que en Windows es el registro — `HKCU\Software\LGA\FolderSwitch`. No hay
+ningun archivo de config en disco.
+
+El comportamiento no cambia (el desinstalador tampoco tocaba el registro, y sigue sin
+tocarlo a proposito para que la config sobreviva a una reinstalacion): lo que se
+corrige es la explicacion, que mandaba a buscar la config al lugar equivocado.
+
+[commit sugerido: "docs: la config vive en el registro, no en AppData"]
+
 ## 2026-09-17
 
 Desinstalar dejaba la carpeta de la app sin borrar. Inno Setup solo saca los archivos
