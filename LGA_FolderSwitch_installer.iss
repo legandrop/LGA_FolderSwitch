@@ -33,6 +33,12 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "deploy\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+; Inno solo desinstala los archivos que copio el. El unico que la app escribe en {app} es
+; debug.log (se prende con log=true en config\debug_flags.txt): sin esta seccion queda
+; huerfano y la carpeta no se borra. La config chica vive en AppData y sobrevive a proposito.
+[UninstallDelete]
+Type: files; Name: "{app}\debug.log"
+
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon

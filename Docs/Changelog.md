@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-17
+
+Desinstalar dejaba la carpeta de la app sin borrar. Inno Setup solo saca los archivos
+que copio el instalador, y `debug.log` —el unico archivo que FolderSwitch escribe en
+`{app}`, cuando `config\debug_flags.txt` tiene `log=true`— quedaba huerfano: con un
+archivo adentro, la carpeta de instalacion tampoco se borra.
+
+`LGA_FolderSwitch_installer.iss` suma una seccion `[UninstallDelete]` con
+`Type: files` para `{app}\debug.log`. No se agrega nada mas porque no hay nada mas:
+el resto de lo que hay en la carpeta lo instalo el propio setup, y la config chica
+vive en AppData y sobrevive a una reinstalacion a proposito. Criterio general en
+`../LGA_Base_QT_C_Py/docs/Doc_Rutas_Instalacion.md`. Verificado compilando el `.iss`
+con ISCC.
+
+[commit sugerido: "fix: el desinstalador se lleva el debug.log que deja la app"]
+
 ## 2026-09-04 (2)
 
 La entrada de `Run` nunca existio en el registro real, y por eso ningun reinicio la
