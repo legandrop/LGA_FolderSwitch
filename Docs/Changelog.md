@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-17 (4)
+
+El `.iss` cerraba la app con `taskkill /F /IM` en `InitializeSetup`, o sea por nombre y
+antes de elegir carpeta: se llevaba una copia de build o de otra instalacion, y tambien la
+de la bandeja aunque despues se cancelara el setup. Ahora el cierre va en
+`PrepareToInstall`, con `{app}` ya elegido, y en `InitializeUninstall`, y cierra solo lo que
+corre desde `{app}` con `tools\close_by_path.ps1`. El script viaja dentro del setup (se
+extrae a `{tmp}`) y ademas se instala en `{app}\tools`, porque el desinstalador no tiene el
+`{tmp}` del setup. Probado con un `.iss` minimo con el mismo `[Code]` y otro `AppId`:
+cierra la copia de `{app}` y deja vivas la de una carpeta hermana y la de un repo.
+
+[commit sugerido: "fix: el instalador cierra la app por ruta y despues de elegir carpeta"]
+
 ## 2026-09-17 (3)
 
 `compilar.bat`, `deploy.bat` e `instalador.bat` cerraban por nombre todos los
