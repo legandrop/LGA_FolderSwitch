@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-18 (8)
+
+El repo no tenia `.gitattributes`: Git guardaba los bytes como llegaban, con nueve archivos en
+CRLF entre otros en LF y los `.bat` en LF, que es lo que hacia fallar un `goto` a una etiqueta
+nueva en `cmd.exe`. Ahora hay `.gitattributes` y `.editorconfig` con la politica LGA (LF por
+defecto, CRLF en `.bat`/`.cmd`/`.ps1`, binarios marcados), la renormalizacion va en su propio
+commit, sin cambios de contenido, y `.git-blame-ignore-revs` la saca de `git blame`.
+
+[commit sugerido: "docs: changelog de la unificacion de line endings"]
+
 ## 2026-09-18 (7)
 
 Con el atajo ocupado por otra app, el aviso decia "Automatic switching still works.", y no era
