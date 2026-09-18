@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-18 (10)
+
+La version pasa a 0.10: el minor lleva dos digitos. El auto-update no la hubiera entendido:
+`VersionCompare` completaba el minor con ceros a la derecha hasta tres digitos, o sea que lo
+leia como decimal, y 0.10 valia lo mismo que 0.1 y menos que 0.9. Ahora compara cada segmento
+como entero (0.10 > 0.9 > 0.1) y una version ilegible no ofrece update. El numero sigue saliendo
+solo de `CMakeLists.txt`; cambian tambien el valor por defecto del `.iss` y la version de
+ejemplo del estado `update-dialog` de `--ui-shot`.
+
+[commit sugerido: "fix: version 0.10 y comparacion de versiones por segmento"]
+
 ## 2026-09-18 (9)
 
 `--ui-shot` no andaba en el build normal: `compilar.bat` solo copiaba el plugin `qwindows`, y

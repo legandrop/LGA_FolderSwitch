@@ -200,7 +200,7 @@ int runUiShot(const QStringList &args)
         root->adjustSize();
         settle(*root);
     } else if (state == QLatin1String("update-dialog")) {
-        canvas.reset(createUpdateAvailableDialog(nullptr, QStringLiteral("LGA FolderSwitch"), QStringLiteral("0.2"),
+        canvas.reset(createUpdateAvailableDialog(nullptr, QStringLiteral("LGA FolderSwitch"), QStringLiteral("0.11"),
                                                  QStringLiteral(FOLDERSWITCH_VERSION)));
         canvas->setAttribute(Qt::WA_DontShowOnScreen, true);
         root = canvas.data();

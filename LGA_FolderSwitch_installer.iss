@@ -8,7 +8,7 @@
 
 #define MyAppName "LGA FolderSwitch"
 #ifndef MyAppVersion
-#define MyAppVersion "0.1"
+#define MyAppVersion "0.10"
 #endif
 #define MyAppPublisher "LGA"
 #define MyAppExeName "LGA_FolderSwitch.exe"
