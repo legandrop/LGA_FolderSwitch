@@ -260,7 +260,7 @@ void MainWindow::refresh()
 
     m_hotkeyBusyChip->setVisible(!hotkeyOk);
     m_hotkeyCaption->setText(hotkeyOk ? QStringLiteral("Press it inside a file dialog to jump right away.")
-                                      : QStringLiteral("Another app took it. Automatic switching still works."));
+                                      : QStringLiteral("Another app took it. Automatic switching isn't affected."));
     Ui::setStyleProperty(m_hotkeyCaption, "tone", hotkeyOk ? QString() : QStringLiteral("err"));
     fitHeight();
 }

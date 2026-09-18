@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-18 (7)
+
+Con el atajo ocupado por otra app, el aviso decia "Automatic switching still works.", y no era
+cierto si la app estaba en pausa o con el auto-switch apagado: en esos casos no hay cambio
+automatico que siga andando. Ahora dice "Automatic switching isn't affected.", que vale en
+cualquier estado: el atajo ocupado no cambia nada del cambio automatico.
+
+[commit sugerido: "fix: el aviso del atajo ocupado no promete el cambio automatico"]
+
 ## 2026-09-18 (6)
 
 Tres detalles de la ventana nueva. "Manual shortcut" iba sangrado bajo "Switch automatically" y
