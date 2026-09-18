@@ -44,6 +44,7 @@ const QStringList kStates = {
     QStringLiteral("paused"),
     QStringLiteral("failed"),
     QStringLiteral("hotkey-busy"),
+    QStringLiteral("failed-hotkey-busy"),
     QStringLiteral("help"),
     QStringLiteral("tray-menu"),
     QStringLiteral("update-dialog"),
@@ -132,6 +133,11 @@ int runUiShot(const QStringList &args)
         last.source = QStringLiteral("XYplorer");
         last.applied = false;
     } else if (state == QLatin1String("hotkey-busy")) {
+        appState.setHotkeyRegistered(false);
+    } else if (state == QLatin1String("failed-hotkey-busy")) {
+        // Fallo con el atajo sin registrar: el consejo no puede ser "reintentar con el atajo".
+        last.source = QStringLiteral("XYplorer");
+        last.applied = false;
         appState.setHotkeyRegistered(false);
     }
     if (state != QLatin1String("empty")) {

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-18 (6)
+
+Tres detalles de la ventana nueva. "Manual shortcut" iba sangrado bajo "Switch automatically" y
+parecia una sub-opcion, pero el atajo funciona aparte (ni el auto-switch ni la pausa lo apagan):
+ahora tiene su propia fila, separada. Con el atajo ocupado, el chip `In use` quedaba contra el
+borde derecho y el aviso se leia como un caption mas: el chip va pegado a la `O` y el aviso, como
+el de un cambio fallido, en el color de error. Y ante un cambio fallido se aconsejaba reintentar
+con Ctrl+Alt+O aunque el atajo no estuviera registrado: en ese caso dice que se elija la carpeta
+a mano. En pausa, la tarjeta aclara que el atajo sigue andando. `--ui-shot` suma
+`failed-hotkey-busy`.
+
+[commit sugerido: "fix: el atajo manual en su propia fila y avisos segun la causa"]
+
 ## 2026-09-18 (5)
 
 `instalador.bat` preguntaba con `choice` aunque no hubiera consola: con la entrada redirigida

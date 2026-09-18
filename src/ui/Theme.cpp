@@ -88,7 +88,7 @@ QToolTip { background-color: @tile; color: @text; border: 1px solid #333333; pad
 QFrame#card { background-color: @card; border: none; border-radius: 8px; }
 QLabel#cardTitle { color: @textStrong; font-size: @fs14; font-weight: 600; }
 QLabel#caption { color: @textFaint; font-size: @fs13; }
-QLabel#caption[tone="err"] { color: #a9a9ae; }
+QLabel#caption[tone="err"] { color: @error; }
 QLabel#optionLabel { color: @text; font-size: @fs13_5; }
 QLabel#meta { color: @textFaint; font-size: @fs12; }
 QFrame#divider { background-color: @divider; border: none; min-height: 1px; max-height: 1px; }

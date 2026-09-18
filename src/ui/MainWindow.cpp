@@ -146,10 +146,17 @@ void MainWindow::buildUi()
     auto *autoCaption = caption(QStringLiteral("When you return to a dialog from the file manager."), optionsCard);
     autoCaption->setContentsMargins(kCheckIndent, 0, 0, 0);
     options->addWidget(autoCaption);
+
+    // El atajo es independiente del auto-switch (onHotkeyPressed no mira ni autoSwitch ni la
+    // pausa): va en su propia fila, separada y sin sangria, como "Start with Windows".
+    options->addSpacing(8);
+    auto *hotkeyDivider = new QFrame(optionsCard);
+    hotkeyDivider->setObjectName(QStringLiteral("divider"));
+    options->addWidget(hotkeyDivider);
     options->addSpacing(8);
 
     auto *hotkeyRow = new QHBoxLayout();
-    hotkeyRow->setContentsMargins(kCheckIndent, 0, 0, 0);
+    hotkeyRow->setContentsMargins(0, 0, 0, 0);
     hotkeyRow->setSpacing(5);
     auto *hotkeyLabel = label(QStringLiteral("Manual shortcut"), "optionLabel", optionsCard);
     hotkeyRow->addWidget(hotkeyLabel);
@@ -159,13 +166,14 @@ void MainWindow::buildUi()
         chip->set(QStringLiteral("key"), key);
         hotkeyRow->addWidget(chip, 0, Qt::AlignVCenter);
     }
-    hotkeyRow->addStretch(1);
+    // "In use" pegado a las teclas, no flotando contra el borde.
+    hotkeyRow->addSpacing(3);
     m_hotkeyBusyChip = new Chip(optionsCard);
     m_hotkeyBusyChip->set(QStringLiteral("err"), QStringLiteral("In use"));
     hotkeyRow->addWidget(m_hotkeyBusyChip, 0, Qt::AlignVCenter);
+    hotkeyRow->addStretch(1);
     options->addLayout(hotkeyRow);
     m_hotkeyCaption = caption(QString(), optionsCard);
-    m_hotkeyCaption->setContentsMargins(kCheckIndent, 0, 0, 0);
     options->addWidget(m_hotkeyCaption);
 
     options->addSpacing(8);
@@ -211,10 +219,12 @@ void MainWindow::connectWrites()
 void MainWindow::refresh()
 {
     const bool on = m_state->enabled();
+    const bool hotkeyOk = m_state->hotkeyRegistered();
     Ui::setStyleProperty(m_statusDot, "state", on ? QStringLiteral("on") : QStringLiteral("off"));
     m_statusTitle->setText(on ? QStringLiteral("Switching is on") : QStringLiteral("Switching is paused"));
     m_statusCaption->setText(on ? QStringLiteral("Dialogs jump to the last folder you used.")
-                                : QStringLiteral("Dialogs keep their own folder."));
+                                : (hotkeyOk ? QStringLiteral("Only Ctrl+Alt+O works while paused.")
+                                            : QStringLiteral("Dialogs keep their own folder.")));
     m_toggleButton->setText(on ? QStringLiteral("Pause") : QStringLiteral("Resume"));
     Ui::setStyleProperty(m_toggleButton, "variant", on ? QString() : QStringLiteral("primary"));
 
@@ -226,7 +236,9 @@ void MainWindow::refresh()
         m_timeLabel->setText(last.when.toString(QStringLiteral("HH:mm")));
         m_folderValue->setText(last.path);
         Ui::setStyleProperty(m_folderValue, "empty", false);
-        m_folderCaption->setText(QStringLiteral("The dialog didn't take it. Retry with Ctrl+Alt+O."));
+        // Reintentar con el atajo solo sirve si el atajo quedo registrado.
+        m_folderCaption->setText(hotkeyOk ? QStringLiteral("The dialog didn't take it. Retry with Ctrl+Alt+O.")
+                                          : QStringLiteral("The dialog didn't take it. Pick the folder by hand."));
         Ui::setStyleProperty(m_folderCaption, "tone", QStringLiteral("err"));
         m_folderCaption->setVisible(!last.applied);
     } else {
@@ -246,10 +258,10 @@ void MainWindow::refresh()
     m_autoSwitchCheck->setChecked(m_state->autoSwitch());
     m_autoSwitchCheck->blockSignals(false);
 
-    const bool hotkeyOk = m_state->hotkeyRegistered();
     m_hotkeyBusyChip->setVisible(!hotkeyOk);
     m_hotkeyCaption->setText(hotkeyOk ? QStringLiteral("Press it inside a file dialog to jump right away.")
                                       : QStringLiteral("Another app took it. Automatic switching still works."));
+    Ui::setStyleProperty(m_hotkeyCaption, "tone", hotkeyOk ? QString() : QStringLiteral("err"));
     fitHeight();
 }
 
