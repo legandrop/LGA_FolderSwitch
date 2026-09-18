@@ -54,6 +54,9 @@ set(SOURCES
     src/ui/UiWidgets.cpp
     src/ui/TabHeader.cpp
     src/core/AppState.cpp
+    src/ui/HelpDialog.cpp
+    src/tray/TrayMenu.cpp
+    src/updates/UpdateDialog.cpp
 )
 
 set(HEADERS
@@ -74,6 +77,9 @@ set(HEADERS
     src/ui/UiWidgets.h
     src/ui/TabHeader.h
     src/core/AppState.h
+    src/ui/HelpDialog.h
+    src/tray/TrayMenu.h
+    src/updates/UpdateDialog.h
 )
 
 add_executable(${PROJECT_NAME}

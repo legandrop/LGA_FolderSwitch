@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QString>
 
+#include "tray/TrayMenu.h"
+
 #include <windows.h>
 
 class QSystemTrayIcon;
@@ -41,6 +43,8 @@ private:
     enum class ManagerType { None, Explorer, XYplorer };
 
     void applyTrayIcon();
+    void refreshFromState();
+    void showHelp();
     // Primer arranque de una copia INSTALADA: activa el inicio con Windows una sola
     // vez y abre Settings para que se vea. Desde build/ o deploy/ no hace nada.
     void runFirstLaunchSetupIfNeeded();
@@ -53,6 +57,7 @@ private:
     AppState *m_state = nullptr;
     QSystemTrayIcon *m_tray = nullptr;
     QMenu *m_menu = nullptr;
+    TrayMenuActions m_menuActions;
     MainWindow *m_window = nullptr;
     ForegroundWatcher *m_foregroundWatcher = nullptr;
     HotkeyFilter *m_hotkeyFilter = nullptr;

@@ -3,6 +3,9 @@
 #include "core/AppState.h"
 #include "ui/MainWindow.h"
 #include "ui/UiWidgets.h"
+#include "ui/HelpDialog.h"
+#include "tray/TrayMenu.h"
+#include "updates/UpdateDialog.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -19,6 +22,11 @@
 #include <QPixmap>
 #include <QSaveFile>
 #include <QDateTime>
+#include <QDialog>
+#include <QHBoxLayout>
+#include <QMenu>
+#include <QScopedPointer>
+#include <QVBoxLayout>
 
 #include <cstdio>
 
@@ -36,6 +44,9 @@ const QStringList kStates = {
     QStringLiteral("paused"),
     QStringLiteral("failed"),
     QStringLiteral("hotkey-busy"),
+    QStringLiteral("help"),
+    QStringLiteral("tray-menu"),
+    QStringLiteral("update-dialog"),
 };
 
 const QString kFixturePath =
@@ -127,13 +138,71 @@ int runUiShot(const QStringList &args)
         appState.setLastSwitch(last);
     }
 
-    MainWindow window(&appState, MainWindow::Mode::Capture);
-    window.setAttribute(Qt::WA_DontShowOnScreen, true);
-    window.applyAutoStartFixture(false, true);
-    window.refresh();
-    settle(window);
-    window.refresh();
-    settle(window);
+    MainWindow mainWindow(&appState, MainWindow::Mode::Capture);
+    mainWindow.setAttribute(Qt::WA_DontShowOnScreen, true);
+    mainWindow.applyAutoStartFixture(false, true);
+    mainWindow.refresh();
+    settle(mainWindow);
+    mainWindow.refresh();
+    settle(mainWindow);
+
+    // Lo que se dibuja: la ventana de Settings, o un lienzo aparte para el menu del tray y el
+    // dialogo de update (que en la app son ventanas propias).
+    QWidget *root = &mainWindow;
+    QScopedPointer<QWidget> canvas;
+    if (state == QLatin1String("help")) {
+        // Velo y dialogo como hijos comunes de la ventana, no ventanas propias: se dibujan con el
+        // mismo render y no hay nada que mostrar.
+        auto *scrim = new Scrim(mainWindow.centralWidget());
+        scrim->setVisible(true);
+        auto *help = new HelpDialog(mainWindow.centralWidget());
+        help->setWindowFlags(Qt::Widget);
+        help->fitHeight();
+        help->move((mainWindow.width() - help->width()) / 2, (mainWindow.height() - help->height()) / 2);
+        help->setVisible(true);
+        settle(mainWindow);
+    } else if (state == QLatin1String("tray-menu")) {
+        canvas.reset(new QWidget);
+        canvas->setObjectName(QStringLiteral("central"));
+        canvas->setAttribute(Qt::WA_DontShowOnScreen, true);
+        canvas->setStyleSheet(QStringLiteral("QWidget#central { background-color: #101010; }"));
+        auto *layout = new QVBoxLayout(canvas.data());
+        layout->setContentsMargins(20, 16, 20, 20);
+        layout->setSpacing(14);
+        // Iconos de la bandeja On y Paused, como los pinta TrayController (sin QSystemTrayIcon).
+        auto *icons = new QHBoxLayout();
+        icons->setSpacing(18);
+        for (const bool paused : {false, true}) {
+            auto *icon = new QLabel(canvas.data());
+            icon->setObjectName(paused ? QStringLiteral("trayIconPaused") : QStringLiteral("trayIconOn"));
+            QPixmap px = trayIconPixmap(Qt::white, paused).scaled(QSize(16, 16) * dpr, Qt::KeepAspectRatio,
+                                                                  Qt::SmoothTransformation);
+            px.setDevicePixelRatio(dpr);
+            icon->setPixmap(px);
+            icons->addWidget(icon);
+        }
+        icons->addStretch(1);
+        layout->addLayout(icons);
+        auto *menu = new QMenu(canvas.data());
+        menu->setWindowFlags(Qt::Widget);
+        const TrayMenuActions actions = buildTrayMenu(menu);
+        refreshTrayMenu(actions, true);
+        menu->setActiveAction(actions.toggle);
+        layout->addWidget(menu);
+        root = canvas.data();
+        settle(*root);
+        root->adjustSize();
+        settle(*root);
+    } else if (state == QLatin1String("update-dialog")) {
+        canvas.reset(createUpdateAvailableDialog(nullptr, QStringLiteral("LGA FolderSwitch"), QStringLiteral("0.2"),
+                                                 QStringLiteral(FOLDERSWITCH_VERSION)));
+        canvas->setAttribute(Qt::WA_DontShowOnScreen, true);
+        root = canvas.data();
+        settle(*root);
+        root->adjustSize();
+        settle(*root);
+    }
+    QWidget &window = *root;
 
     const QSize logical = window.size();
     QPixmap pixmap(logical * dpr);

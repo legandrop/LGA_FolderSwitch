@@ -1,5 +1,6 @@
 #include "updates/UpdateService.h"
 #include "updates/VersionCompare.h"
+#include "updates/UpdateDialog.h"
 
 #include <QApplication>
 #include <QCryptographicHash>
@@ -23,6 +24,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QScopedPointer>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QUrl>
@@ -349,42 +351,13 @@ void UpdateService::onCheckFinished(bool manual)
 void UpdateService::promptForUpdate(const QString &version, const QUrl &downloadUrl,
                                     const QString &assetName, const QString &sha256Digest)
 {
-    QDialog dialog(parentWindow());
-    dialog.setWindowTitle(tr("Update Available"));
-    dialog.setModal(true);
-
-    QVBoxLayout *dialogLayout = new QVBoxLayout(&dialog);
-    dialogLayout->setContentsMargins(20, 18, 20, 18);
-    dialogLayout->setSpacing(12);
-
-    QLabel *titleLabel =
-        new QLabel(tr("%1 %2 is available.").arg(kDisplayName, version), &dialog);
-    titleLabel->setWordWrap(true);
-    dialogLayout->addWidget(titleLabel);
-
-    QLabel *messageLabel = new QLabel(
-        tr("You are currently running version %1.").arg(QApplication::applicationVersion()),
-        &dialog);
-    messageLabel->setWordWrap(true);
-    dialogLayout->addWidget(messageLabel);
-
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->setContentsMargins(0, 8, 0, 0);
-    buttonLayout->setSpacing(8);
-    buttonLayout->addStretch(1);
-
-    QPushButton *updateButton = new QPushButton(tr("Update now"), &dialog);
-    QPushButton *laterButton = new QPushButton(tr("Later"), &dialog);
-    buttonLayout->addWidget(updateButton);
-    buttonLayout->addWidget(laterButton);
-    dialogLayout->addLayout(buttonLayout);
-
-    connect(updateButton, &QPushButton::clicked, &dialog, &QDialog::accept);
-    connect(laterButton, &QPushButton::clicked, &dialog, &QDialog::reject);
+    // El armado vive en UpdateDialog.cpp para que --ui-shot lo pueda dibujar sin este servicio.
+    QScopedPointer<QDialog> dialog(
+        createUpdateAvailableDialog(parentWindow(), kDisplayName, version, QApplication::applicationVersion()));
 
     // Later = no hacer nada: sin snooze ni skip persistente, por diseño. La proxima
     // oportunidad de actualizar es el proximo arranque o un chequeo manual.
-    if (dialog.exec() == QDialog::Accepted) {
+    if (dialog->exec() == QDialog::Accepted) {
         downloadAndRunUpdate(downloadUrl, assetName, sha256Digest, version);
     } else {
         // Salida real del flujo chequeo->prompt: recien aca se libera m_busy.

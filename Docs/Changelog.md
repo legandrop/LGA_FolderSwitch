@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-18 (4)
+
+No habia ayuda ni forma de ver la version, y pausar la app era un checkbox mas. El `?` de la
+barra abre un Help como el de LGA_VideoDownloader: version, `Check now`, autor y como se usa. El
+menu del tray suma un encabezado `FolderSwitch · On|Paused` y `Pause`/`Resume switching`, con la
+paleta de `Doc_MenuContextual.md` (es un QMenu y no LgaContextMenu, que vive en
+filemanagers3_core). En pausa el icono del tray va atenuado. Menu, icono, tooltip y la tarjeta de
+estado leen el mismo `AppState`. El dialogo "Update Available" toma el tema y se arma aparte, asi
+`--ui-shot` lo dibuja sin el updater. Estados nuevos: `help`, `tray-menu` y `update-dialog`.
+
+[commit sugerido: "feat: Help y menu del tray con el estilo LGA"]
+
 ## 2026-09-18 (3)
 
 La ventana de Settings eran tres checkboxes en castellano: no decia si la app estaba andando, el

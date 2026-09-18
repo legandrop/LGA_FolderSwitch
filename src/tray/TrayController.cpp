@@ -1,6 +1,8 @@
 #include "tray/TrayController.h"
 #include "ui/MainWindow.h"
 #include "core/AppState.h"
+#include "tray/TrayMenu.h"
+#include "ui/HelpDialog.h"
 #include "core/ForegroundWatcher.h"
 #include "core/HotkeyFilter.h"
 #include "core/WindowUtils.h"
@@ -28,19 +30,6 @@ namespace {
 constexpr qint64 kManagerFreshnessMs = 60000; // 60 s
 constexpr int kSwitchDelayMs = 200;
 
-QIcon tintedTrayIcon(const QColor &color)
-{
-    QPixmap px(QStringLiteral(":/icons/LGA_FolderSwitch_menubar.png"));
-    if (px.isNull()) {
-        px = QPixmap(QStringLiteral(":/icons/LGA_FolderSwitch.png"));
-    }
-    QPainter p(&px);
-    p.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    p.fillRect(px.rect(), color);
-    p.end();
-    return QIcon(px);
-}
-
 // True si la barra de tareas / area de notificacion es CLARA.
 bool systemBarIsLight()
 {
@@ -59,18 +48,16 @@ TrayController::TrayController(QObject *parent)
     m_window = new MainWindow(m_state, MainWindow::Mode::Normal);
 
     m_menu = new QMenu();
-    QAction *openAction = m_menu->addAction(QStringLiteral("Open Settings"));
-    m_menu->addSeparator();
-    QAction *checkForUpdatesAction = m_menu->addAction(QStringLiteral("Check for Updates..."));
-    m_menu->addSeparator();
-    QAction *quitAction = m_menu->addAction(QStringLiteral("Quit"));
-    connect(openAction, &QAction::triggered, this, &TrayController::showSettings);
-    connect(checkForUpdatesAction, &QAction::triggered, this, &TrayController::checkForUpdatesManual);
-    connect(quitAction, &QAction::triggered, this, &TrayController::quit);
+    m_menuActions = buildTrayMenu(m_menu);
+    connect(m_menuActions.toggle, &QAction::triggered, this, [this]() { m_state->setEnabled(!m_state->enabled()); });
+    connect(m_menuActions.settings, &QAction::triggered, this, &TrayController::showSettings);
+    connect(m_menuActions.updates, &QAction::triggered, this, &TrayController::checkForUpdatesManual);
+    connect(m_menuActions.quit, &QAction::triggered, this, &TrayController::quit);
+    connect(m_window, &MainWindow::helpRequested, this, &TrayController::showHelp);
 
     m_tray = new QSystemTrayIcon(this);
-    applyTrayIcon();
-    m_tray->setToolTip(QStringLiteral("LGA FolderSwitch"));
+    refreshFromState();
+    connect(m_state, &AppState::changed, this, &TrayController::refreshFromState);
     m_tray->setContextMenu(m_menu);
     connect(m_tray, &QSystemTrayIcon::activated, this,
             [this](QSystemTrayIcon::ActivationReason reason) {
@@ -128,8 +115,24 @@ void TrayController::runFirstLaunchSetupIfNeeded()
 
 void TrayController::applyTrayIcon()
 {
-    const QIcon trayIcon = tintedTrayIcon(systemBarIsLight() ? Qt::black : Qt::white);
-    m_tray->setIcon(trayIcon);
+    const QColor barColor = systemBarIsLight() ? QColor(Qt::black) : QColor(Qt::white);
+    m_tray->setIcon(QIcon(trayIconPixmap(barColor, !m_state->enabled())));
+}
+
+void TrayController::refreshFromState()
+{
+    // Menu, icono y tooltip leen el mismo AppState que la tarjeta de estado de Settings.
+    const bool enabled = m_state->enabled();
+    refreshTrayMenu(m_menuActions, enabled);
+    applyTrayIcon();
+    m_tray->setToolTip(enabled ? QStringLiteral("LGA FolderSwitch") : QStringLiteral("LGA FolderSwitch — paused"));
+}
+
+void TrayController::showHelp()
+{
+    HelpDialog dialog(m_window);
+    connect(&dialog, &HelpDialog::checkRequested, this, &TrayController::checkForUpdatesManual);
+    dialog.execOver(m_window);
 }
 
 TrayController::~TrayController()

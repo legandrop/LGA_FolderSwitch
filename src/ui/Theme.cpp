@@ -149,7 +149,8 @@ QMenu::item:disabled { color: #6a6a6a; }
 QMenu::separator { height: 1px; background: #3a3a3a; margin: 5px 8px; }
 
 /* Dialogos: el de update, los QMessageBox y el progreso de descarga */
-QDialog, QMessageBox, QProgressDialog { background-color: @dialog; }
+QDialog#updateDialog, QMessageBox, QProgressDialog { background-color: @dialog; }
+QDialog#helpDialog { background: transparent; }
 QLabel#dialogTitle { color: @textBright; font-size: @fs14; font-weight: 600; }
 QProgressBar { background-color: #393959; border: 1px solid #444444; border-radius: 4px; min-height: 8px; max-height: 8px; color: transparent; }
 QProgressBar::chunk { background-color: #6a55c9; border-radius: 3px; }
