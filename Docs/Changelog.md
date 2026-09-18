@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-18
+
+No habia forma de ver la ventana sin abrirla en el escritorio. Se suma `--ui-shot <estado>
+<out.png> [--dpr N]`, que arma la ventana real con datos de prueba y la dibuja a un PNG con su
+`.json` (geometria y fuente resuelta), como el de LGA_VideoDownloader. Sale antes de la instancia
+unica, sin bandeja, hotkey, updater ni debug.log, y solo con `QT_QPA_PLATFORM=offscreen` (si no,
+sale con 2). `MainWindow::Mode::Capture` no conecta ninguna escritura. De paso, en el modo normal
+el estado inicial se carga antes de conectar los checkboxes: antes cada arranque reescribia
+`autoSwitch` y `enabled` en el registro. El plugin `qoffscreen.dll` se copia a mano al build de
+prueba: tocar `compilar.bat` (en LF) le rompio la busqueda de etiquetas a cmd.exe.
+
+[commit sugerido: "feat: modo --ui-shot para capturar la ventana sin escritorio"]
+
 ## 2026-09-17 (4)
 
 El `.iss` cerraba la app con `taskkill /F /IM` en `InitializeSetup`, o sea por nombre y

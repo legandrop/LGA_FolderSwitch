@@ -1,6 +1,7 @@
 #include "tray/TrayController.h"
 #include "core/DialogSwitcher.h"
 #include "windows/AutoStart.h"
+#include "qa/UiShot.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -121,9 +122,39 @@ static const char kBuildVersionMarker[] = "LGA_FOLDERSWITCH_BUILD_VERSION=" FOLD
 
 } // namespace
 
+// Fuentes embebidas, icono y hoja de estilo: lo comparten la app y la captura de QA, para que
+// --ui-shot dibuje con exactamente el mismo estilo.
+static void applyAppStyle(QApplication &app)
+{
+    const QStringList fontFiles = {
+        ":/fonts/Inter_18pt-Regular.ttf",
+        ":/fonts/Inter_18pt-Medium.ttf",
+    };
+    for (const QString &f : fontFiles) {
+        QFontDatabase::addApplicationFont(f);
+    }
+
+    app.setWindowIcon(QIcon(":/icons/LGA_FolderSwitch.png"));
+
+    QFile qssFile(":/styles/dark_theme.qss");
+    if (qssFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qApp->setStyleSheet(QString::fromUtf8(qssFile.readAll()));
+        qssFile.close();
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    qInstallMessageHandler(fileMessageHandler);
+    // --ui-shot no escribe en el debug.log: una captura no deja rastros fuera del PNG y su .json.
+    bool uiShot = false;
+    for (int i = 1; i < argc; ++i) {
+        if (qstrcmp(argv[i], "--ui-shot") == 0) {
+            uiShot = true;
+        }
+    }
+    if (!uiShot) {
+        qInstallMessageHandler(fileMessageHandler);
+    }
     qDebug() << kBuildVersionMarker;
     QApplication app(argc, argv);
     app.setStyle("Fusion");
@@ -132,6 +163,14 @@ int main(int argc, char *argv[])
     QApplication::setApplicationVersion(FOLDERSWITCH_VERSION);
     QApplication::setOrganizationName("LGA");
     QApplication::setQuitOnLastWindowClosed(false);
+
+    // Captura de QA (--ui-shot): sale antes de COM, de la instancia unica, de la bandeja, del
+    // hotkey y del updater. Dibujar un estado no toca nada de la copia que el usuario tiene
+    // abierta ni de su registro.
+    if (uiShot) {
+        applyAppStyle(app);
+        return runUiShot(app.arguments());
+    }
 
     // COM en modo apartment: lo necesita FolderResolver (IShellWindows/IWebBrowser2).
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -162,21 +201,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    const QStringList fontFiles = {
-        ":/fonts/Inter_18pt-Regular.ttf",
-        ":/fonts/Inter_18pt-Medium.ttf",
-    };
-    for (const QString &f : fontFiles) {
-        QFontDatabase::addApplicationFont(f);
-    }
-
-    app.setWindowIcon(QIcon(":/icons/LGA_FolderSwitch.png"));
-
-    QFile qssFile(":/styles/dark_theme.qss");
-    if (qssFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qApp->setStyleSheet(QString::fromUtf8(qssFile.readAll()));
-        qssFile.close();
-    }
+    applyAppStyle(app);
 
     // Al arrancar con Windows (Run key), el shell suele no tener la bandeja lista
     // todavia: explorer.exe sigue inicializandose cuando ya nos lanzaron. Un loop

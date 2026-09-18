@@ -15,13 +15,17 @@ constexpr int kWindowWidth = 380;
 constexpr int kWindowHeight = 240;
 }
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(Mode mode, QWidget *parent)
     : QMainWindow(parent)
+    , m_mode(mode)
 {
     setWindowTitle(QStringLiteral("LGA FolderSwitch"));
     buildUi();
     setFixedSize(kWindowWidth, kWindowHeight);
-    loadSettings();
+    if (m_mode == Mode::Normal) {
+        loadSettings();
+        connectWrites();
+    }
 }
 
 MainWindow::~MainWindow() = default;
@@ -44,11 +48,6 @@ void MainWindow::buildUi()
     layout->addSpacing(8);
 
     m_autoSwitchCheck = new QCheckBox(QStringLiteral("Auto-switch al volver al diálogo"), central);
-    connect(m_autoSwitchCheck, &QCheckBox::toggled, this, [this](bool checked) {
-        QSettings settings(QStringLiteral("LGA"), QStringLiteral("FolderSwitch"));
-        settings.setValue(QStringLiteral("autoSwitch"), checked);
-        emit autoSwitchToggled(checked);
-    });
     layout->addWidget(m_autoSwitchCheck);
 
     // Cableado tomado de FrameRev (src/ui/mainwindow/MainWindow.cpp): estado REAL del sistema
@@ -68,20 +67,9 @@ void MainWindow::buildUi()
     //    contenedor, escribe donde Windows lee. Medido el 2026-09-04; ver
     //    ../LGA_Base_QT_C_Py/docs/Doc_Autostart_Windows.md.
     m_autoStartCheck = new QCheckBox(QStringLiteral("Iniciar con Windows"), central);
-    m_autoStartCheck->setChecked(AutoStart::isEnabled());
-    m_autoStartCheck->setToolTip(
-        AutoStart::availability().available
-            ? QStringLiteral("Inicia LGA FolderSwitch al iniciar sesión")
-            : QStringLiteral("Registra ESTA copia de desarrollo para iniciar con la sesión"));
-    connect(m_autoStartCheck, &QCheckBox::toggled, this, &MainWindow::onAutoStartToggled);
     layout->addWidget(m_autoStartCheck);
 
     m_enabledCheck = new QCheckBox(QStringLiteral("Activado"), central);
-    connect(m_enabledCheck, &QCheckBox::toggled, this, [this](bool checked) {
-        QSettings settings(QStringLiteral("LGA"), QStringLiteral("FolderSwitch"));
-        settings.setValue(QStringLiteral("enabled"), checked);
-        emit masterEnabledToggled(checked);
-    });
     layout->addWidget(m_enabledCheck);
 
     layout->addStretch(1);
@@ -101,11 +89,40 @@ void MainWindow::loadSettings()
 
     m_autoSwitchCheck->setChecked(autoSwitch);
     m_enabledCheck->setChecked(enabled);
+    m_autoStartCheck->setChecked(AutoStart::isEnabled());
+    m_autoStartCheck->setToolTip(
+        AutoStart::availability().available
+            ? QStringLiteral("Inicia LGA FolderSwitch al iniciar sesión")
+            : QStringLiteral("Registra ESTA copia de desarrollo para iniciar con la sesión"));
+}
+
+void MainWindow::connectWrites()
+{
+    connect(m_autoSwitchCheck, &QCheckBox::toggled, this, [this](bool checked) {
+        QSettings settings(QStringLiteral("LGA"), QStringLiteral("FolderSwitch"));
+        settings.setValue(QStringLiteral("autoSwitch"), checked);
+        emit autoSwitchToggled(checked);
+    });
+    connect(m_autoStartCheck, &QCheckBox::toggled, this, &MainWindow::onAutoStartToggled);
+    connect(m_enabledCheck, &QCheckBox::toggled, this, [this](bool checked) {
+        QSettings settings(QStringLiteral("LGA"), QStringLiteral("FolderSwitch"));
+        settings.setValue(QStringLiteral("enabled"), checked);
+        emit masterEnabledToggled(checked);
+    });
+}
+
+void MainWindow::applyFixture(bool enabled, bool autoSwitch, bool autoStart, const QString &folder)
+{
+    // Sin connects de escritura en Capture: setChecked no llega a QSettings ni al registro.
+    m_enabledCheck->setChecked(enabled);
+    m_autoSwitchCheck->setChecked(autoSwitch);
+    m_autoStartCheck->setChecked(autoStart);
+    setLastDetectedFolder(folder);
 }
 
 void MainWindow::syncAutoStartCheck()
 {
-    if (!m_autoStartCheck) {
+    if (!m_autoStartCheck || m_mode != Mode::Normal) {
         return;
     }
     // Con las senales bloqueadas: reflejar el estado no es activarlo. Sin esto,

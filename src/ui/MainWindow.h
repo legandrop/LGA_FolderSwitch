@@ -13,11 +13,18 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    // Capture: la arma --ui-shot. No lee QSettings ni el registro, no conecta ninguna escritura
+    // y el estado sale solo de applyFixture().
+    enum class Mode { Normal, Capture };
+
+    explicit MainWindow(Mode mode = Mode::Normal, QWidget *parent = nullptr);
     ~MainWindow() override;
 
     bool autoSwitchEnabled() const;
     bool masterEnabled() const;
+
+    // Solo para Mode::Capture: estado de prueba de la captura.
+    void applyFixture(bool enabled, bool autoSwitch, bool autoStart, const QString &folder);
 
 public slots:
     // Actualiza el label de estado con la ultima carpeta detectada.
@@ -37,9 +44,13 @@ private slots:
 private:
     void buildUi();
     void loadSettings();
+    // Escrituras de los checkboxes: se conectan DESPUES de cargar el estado inicial, asi
+    // reflejarlo no reescribe QSettings ni la clave Run. Nunca en Mode::Capture.
+    void connectWrites();
     // Refleja el estado REAL del inicio con Windows sin disparar toggled().
     void syncAutoStartCheck();
 
+    Mode m_mode = Mode::Normal;
     QLabel *m_statusLabel = nullptr;
     QCheckBox *m_autoSwitchCheck = nullptr;
     QCheckBox *m_autoStartCheck = nullptr;
