@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-17 (3)
+
+`compilar.bat`, `deploy.bat` e `instalador.bat` cerraban por nombre todos los
+`LGA_FolderSwitch.exe` abiertos, incluida la copia de la bandeja con la que se estaba
+trabajando. Ahora cada uno cierra solo la copia que corre desde su propio arbol (`build\`
+o `build-release\`, y `deploy\`), por la ruta real del proceso con
+`tools\close_by_path.ps1`, copia de `LGA_Base_QT_C_Py`. Si la instalada esta abierta, el
+build nuevo sale en silencio por el lock de instancia unica: hay que cerrarla a mano.
+
+`compilar.bat` y `deploy.bat` toman ademas su carpeta antes de leer los argumentos: `shift`
+corria tambien el parametro cero y, llamados con argumentos desde otra carpeta, resolvian
+rutas (y el `start` del final) contra la carpeta actual.
+
+[commit sugerido: "fix: los scripts cierran la app por ruta, no por nombre"]
+
 ## 2026-09-17 (2)
 
 El comentario que acompana la seccion `[UninstallDelete]` del `.iss` decia que la

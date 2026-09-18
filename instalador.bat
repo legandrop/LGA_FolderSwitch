@@ -153,8 +153,11 @@ if "%VERSION%"=="" (
 )
 echo OK: Version detectada: %VERSION%
 
-REM Cerrar proceso activo para evitar bloqueos durante deploy/installer
-taskkill /F /IM LGA_FolderSwitch.exe 2>nul
+REM Cerrar SOLO las copias que corren desde deploy\ y build-release\ de ESTE repo, para evitar
+REM bloqueos durante deploy/installer. Antes era "taskkill /F /IM", que cerraba tambien la
+REM instalada. Ver tools\close_by_path.ps1. Sale con 2 solo si rechazo los parametros.
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0tools\close_by_path.ps1" -ExeName LGA_FolderSwitch.exe -ExactPath "%~dp0deploy\LGA_FolderSwitch.exe,%~dp0build-release\LGA_FolderSwitch.exe"
+if %ERRORLEVEL% equ 2 ( echo Error: close_by_path rechazo los parametros & exit /b 1 )
 
 REM Ejecutar deploy automaticamente (sin abrir la app al finalizar)
 echo Ejecutando deploy.bat --no-run...

@@ -8,6 +8,9 @@ set BUILD_DIR=build
 set NO_RUN=false
 set FORCE_CLEAN=false
 set PARALLEL_CORES=%NUMBER_OF_PROCESSORS%
+REM La carpeta del script se toma ANTES de parsear: `shift` (sin /1) corre tambien el parametro
+REM cero, asi que despues del parseo "~dp0" ya no da la carpeta del script sino la actual.
+set "APP_ROOT=%~dp0"
 
 :parse_args
 if "%1"=="" goto after_args
@@ -31,11 +34,16 @@ shift
 goto parse_args
 
 :after_args
-cd /d "%~dp0"
+cd /d "%APP_ROOT%"
 
 REM La app vive en la bandeja: una instancia viva bloquea el .exe y el link falla
-REM con "Permission denied". Ademas el QLockFile haria salir en silencio a la nueva.
-taskkill /F /IM LGA_FolderSwitch.exe >nul 2>&1
+REM con "Permission denied". Se cierra SOLO la copia que corre desde el arbol que se va a
+REM compilar (tools\close_by_path.ps1); antes era "taskkill /F /IM", que cerraba tambien la
+REM instalada. Si la instalada esta abierta, el QLockFile hace salir en silencio a la nueva:
+REM para probar el build hay que cerrar la instalada a mano. Sale con 2 solo si rechazo los
+REM parametros.
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%APP_ROOT%tools\close_by_path.ps1" -ExeName LGA_FolderSwitch.exe -ExactPath "%APP_ROOT%%BUILD_DIR%\LGA_FolderSwitch.exe"
+if %ERRORLEVEL% equ 2 ( echo Error: close_by_path rechazo los parametros & exit /b 1 )
 ping -n 2 127.0.0.1 >nul
 
 REM Rutas de las toolchains. El bloque de dependencias las usa en vez de repetir
@@ -132,7 +140,7 @@ if "%NO_RUN%"=="true" (
 )
 
 echo Iniciando LGA_FolderSwitch...
-start "" "%~dp0%BUILD_DIR%\LGA_FolderSwitch.exe"
+start "" "%APP_ROOT%%BUILD_DIR%\LGA_FolderSwitch.exe"
 exit /b 0
 
 REM ============================================================

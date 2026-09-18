@@ -1,6 +1,9 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+REM La carpeta del script se toma ANTES de parsear: `shift` corre tambien el parametro cero, y
+REM despues del parseo "~dp0" ya no da la carpeta del script sino la actual.
+set "APP_ROOT=%~dp0"
 
 set "NO_RUN=false"
 set "BUILD_DIR=build-release"
@@ -16,10 +19,14 @@ goto parse_args
 :after_args
 echo Implementando LGA FolderSwitch...
 
-taskkill /F /IM LGA_FolderSwitch.exe >nul 2>&1
+REM Cerrar SOLO las copias que corren desde deploy\ y build-release\ de ESTE repo (deploy\ se
+REM borra mas abajo). Antes era "taskkill /F /IM", que cerraba tambien la instalada. Ver
+REM tools\close_by_path.ps1. Sale con 2 solo si rechazo los parametros.
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%APP_ROOT%tools\close_by_path.ps1" -ExeName LGA_FolderSwitch.exe -ExactPath "%APP_ROOT%deploy\LGA_FolderSwitch.exe,%APP_ROOT%%BUILD_DIR%\LGA_FolderSwitch.exe"
+if %ERRORLEVEL% equ 2 ( echo Error: close_by_path rechazo los parametros & exit /b 1 )
 
 echo Compilando (modo Release) via compilar.bat...
-call "%~dp0compilar.bat" --release --no-run
+call "%APP_ROOT%compilar.bat" --release --no-run
 if %ERRORLEVEL% neq 0 (
     echo Error en la compilacion.
     exit /b 1
