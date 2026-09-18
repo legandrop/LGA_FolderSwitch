@@ -3,36 +3,40 @@
 
 #include <QMainWindow>
 
+class AppState;
+class Chip;
+class ElidedLabel;
 class QCheckBox;
+class QFrame;
 class QLabel;
+class QPushButton;
+class TabHeader;
 
-// Ventana de Settings de LGA FolderSwitch. Chica, dark, con chrome del SO.
-// El boton X no cierra la app: oculta la ventana a la bandeja (closeEvent).
+// Ventana de Settings de LGA FolderSwitch: tarjeta de estado (On/Paused), ultima carpeta y
+// opciones. Todo lo que muestra sale de AppState; lo que el usuario cambia se escribe en AppState
+// (o en AutoStart, para el inicio con Windows). El boton X no cierra la app: oculta la ventana a
+// la bandeja (closeEvent).
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    // Capture: la arma --ui-shot. No lee QSettings ni el registro, no conecta ninguna escritura
-    // y el estado sale solo de applyFixture().
+    // Capture: la arma --ui-shot. No lee QSettings ni el registro, no hace NINGUN connect y el
+    // estado sale solo del AppState de prueba y de applyAutoStartFixture().
     enum class Mode { Normal, Capture };
 
-    explicit MainWindow(Mode mode = Mode::Normal, QWidget *parent = nullptr);
+    MainWindow(AppState *state, Mode mode, QWidget *parent = nullptr);
     ~MainWindow() override;
 
-    bool autoSwitchEnabled() const;
-    bool masterEnabled() const;
+    TabHeader *tabHeader() const { return m_header; }
 
-    // Solo para Mode::Capture: estado de prueba de la captura.
-    void applyFixture(bool enabled, bool autoSwitch, bool autoStart, const QString &folder);
-
-public slots:
-    // Actualiza el label de estado con la ultima carpeta detectada.
-    void setLastDetectedFolder(const QString &folder);
+    // Solo para Mode::Capture: estado del checkbox de inicio con Windows.
+    void applyAutoStartFixture(bool enabled, bool available);
+    // Vuelve a leer AppState y ajusta el alto de la ventana a su contenido.
+    void refresh();
 
 signals:
-    void autoSwitchToggled(bool enabled);
-    void masterEnabledToggled(bool enabled);
+    void helpRequested();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -43,18 +47,33 @@ private slots:
 
 private:
     void buildUi();
-    void loadSettings();
-    // Escrituras de los checkboxes: se conectan DESPUES de cargar el estado inicial, asi
-    // reflejarlo no reescribe QSettings ni la clave Run. Nunca en Mode::Capture.
+    // Escrituras de los controles. Se conectan DESPUES de cargar el estado inicial, asi reflejarlo
+    // no reescribe QSettings ni la clave Run. Nunca en Mode::Capture.
     void connectWrites();
     // Refleja el estado REAL del inicio con Windows sin disparar toggled().
     void syncAutoStartCheck();
+    void setAutoStartTooltip(bool available);
+    void fitHeight();
 
+    AppState *m_state = nullptr;
     Mode m_mode = Mode::Normal;
-    QLabel *m_statusLabel = nullptr;
+
+    TabHeader *m_header = nullptr;
+    QLabel *m_statusDot = nullptr;
+    QLabel *m_statusTitle = nullptr;
+    QLabel *m_statusCaption = nullptr;
+    QPushButton *m_toggleButton = nullptr;
+
+    Chip *m_sourceChip = nullptr;
+    Chip *m_resultChip = nullptr;
+    QLabel *m_timeLabel = nullptr;
+    ElidedLabel *m_folderValue = nullptr;
+    QLabel *m_folderCaption = nullptr;
+
     QCheckBox *m_autoSwitchCheck = nullptr;
+    Chip *m_hotkeyBusyChip = nullptr;
+    QLabel *m_hotkeyCaption = nullptr;
     QCheckBox *m_autoStartCheck = nullptr;
-    QCheckBox *m_enabledCheck = nullptr;
 };
 
 #endif // FOLDERSWITCH_MAINWINDOW_H

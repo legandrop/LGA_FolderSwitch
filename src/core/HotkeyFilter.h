@@ -17,6 +17,9 @@ public:
 
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
 
+    // False si RegisterHotKey fallo (otra app ya tiene Ctrl+Alt+O). La UI lo muestra.
+    bool isRegistered() const { return m_registered; }
+
 signals:
     void hotkeyPressed();
 

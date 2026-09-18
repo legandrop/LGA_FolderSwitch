@@ -52,6 +52,8 @@ set(SOURCES
     src/qa/UiShot.cpp
     src/ui/Theme.cpp
     src/ui/UiWidgets.cpp
+    src/ui/TabHeader.cpp
+    src/core/AppState.cpp
 )
 
 set(HEADERS
@@ -70,6 +72,8 @@ set(HEADERS
     src/qa/UiShot.h
     src/ui/Theme.h
     src/ui/UiWidgets.h
+    src/ui/TabHeader.h
+    src/core/AppState.h
 )
 
 add_executable(${PROJECT_NAME}

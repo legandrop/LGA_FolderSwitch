@@ -1,6 +1,8 @@
 #include "qa/UiShot.h"
 
+#include "core/AppState.h"
 #include "ui/MainWindow.h"
+#include "ui/UiWidgets.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -16,6 +18,7 @@
 #include <QAbstractButton>
 #include <QPixmap>
 #include <QSaveFile>
+#include <QDateTime>
 
 #include <cstdio>
 
@@ -31,6 +34,8 @@ const QStringList kStates = {
     QStringLiteral("on"),
     QStringLiteral("empty"),
     QStringLiteral("paused"),
+    QStringLiteral("failed"),
+    QStringLiteral("hotkey-busy"),
 };
 
 const QString kFixturePath =
@@ -103,15 +108,31 @@ int runUiShot(const QStringList &args)
         return 2;
     }
 
-    MainWindow window(MainWindow::Mode::Capture);
-    window.setAttribute(Qt::WA_DontShowOnScreen, true);
-    if (state == QLatin1String("on")) {
-        window.applyFixture(true, true, false, kFixturePath);
-    } else if (state == QLatin1String("empty")) {
-        window.applyFixture(true, true, false, QString());
-    } else if (state == QLatin1String("paused")) {
-        window.applyFixture(false, true, false, kFixturePath);
+    // AppState sin persistencia: nunca lee ni escribe QSettings. Todo el estado es del fixture.
+    AppState appState(AppState::Persistence::None);
+    AppState::LastSwitch last;
+    last.path = kFixturePath;
+    last.source = QStringLiteral("Explorer");
+    last.applied = true;
+    last.when = QDateTime(QDate(2026, 9, 18), QTime(12, 41));
+    if (state == QLatin1String("paused")) {
+        appState.setEnabled(false);
+    } else if (state == QLatin1String("failed")) {
+        last.source = QStringLiteral("XYplorer");
+        last.applied = false;
+    } else if (state == QLatin1String("hotkey-busy")) {
+        appState.setHotkeyRegistered(false);
     }
+    if (state != QLatin1String("empty")) {
+        appState.setLastSwitch(last);
+    }
+
+    MainWindow window(&appState, MainWindow::Mode::Capture);
+    window.setAttribute(Qt::WA_DontShowOnScreen, true);
+    window.applyAutoStartFixture(false, true);
+    window.refresh();
+    settle(window);
+    window.refresh();
     settle(window);
 
     const QSize logical = window.size();
@@ -134,7 +155,7 @@ int runUiShot(const QStringList &args)
 
     // Guarda de fuente: sin Inter la captura no sirve de evidencia (todo sale "un poco distinto").
     const QFontInfo windowFont(window.font());
-    const bool fontOk = windowFont.family().startsWith(QLatin1String("Inter"));
+    const bool fontOk = windowFont.family() == QLatin1String("Inter");
 
     QJsonObject descriptor;
     descriptor.insert(QStringLiteral("state"), state);
@@ -156,6 +177,10 @@ int runUiShot(const QStringList &args)
         entry.insert(QStringLiteral("name"), widget->objectName());
         if (auto *label = qobject_cast<QLabel *>(widget)) {
             entry.insert(QStringLiteral("text"), label->text().left(80));
+            entry.insert(QStringLiteral("font"), fontOf(widget));
+        } else if (auto *elided = qobject_cast<ElidedLabel *>(widget)) {
+            entry.insert(QStringLiteral("text"), elided->text());
+            entry.insert(QStringLiteral("shown"), elided->shownText());
             entry.insert(QStringLiteral("font"), fontOf(widget));
         } else if (auto *button = qobject_cast<QAbstractButton *>(widget)) {
             entry.insert(QStringLiteral("text"), button->text().left(80));

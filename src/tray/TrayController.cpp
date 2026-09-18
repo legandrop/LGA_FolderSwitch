@@ -1,5 +1,6 @@
 #include "tray/TrayController.h"
 #include "ui/MainWindow.h"
+#include "core/AppState.h"
 #include "core/ForegroundWatcher.h"
 #include "core/HotkeyFilter.h"
 #include "core/WindowUtils.h"
@@ -54,13 +55,8 @@ bool systemBarIsLight()
 TrayController::TrayController(QObject *parent)
     : QObject(parent)
 {
-    m_window = new MainWindow();
-    connect(m_window, &MainWindow::autoSwitchToggled, this, [](bool checked) {
-        qDebug() << "[TrayController] Auto-switch:" << checked;
-    });
-    connect(m_window, &MainWindow::masterEnabledToggled, this, [](bool checked) {
-        qDebug() << "[TrayController] Activado:" << checked;
-    });
+    m_state = new AppState(AppState::Persistence::Settings, this);
+    m_window = new MainWindow(m_state, MainWindow::Mode::Normal);
 
     m_menu = new QMenu();
     QAction *openAction = m_menu->addAction(QStringLiteral("Open Settings"));
@@ -90,6 +86,7 @@ TrayController::TrayController(QObject *parent)
             this, &TrayController::onForegroundChanged);
 
     m_hotkeyFilter = new HotkeyFilter(this);
+    m_state->setHotkeyRegistered(m_hotkeyFilter->isRegistered());
     connect(m_hotkeyFilter, &HotkeyFilter::hotkeyPressed, this, &TrayController::onHotkeyPressed);
     QCoreApplication::instance()->installNativeEventFilter(m_hotkeyFilter);
 
@@ -210,10 +207,13 @@ void TrayController::performSwitch(HWND dialogHwnd)
         qDebug() << "[TrayController] No se pudo resolver el path del manager guardado.";
         return;
     }
-    if (m_window) {
-        m_window->setLastDetectedFolder(path);
-    }
     const bool ok = DialogSwitcher::switchDialog(dialogHwnd, path);
+    AppState::LastSwitch last;
+    last.path = path;
+    last.source = m_lastManagerType == ManagerType::XYplorer ? QStringLiteral("XYplorer") : QStringLiteral("Explorer");
+    last.applied = ok;
+    last.when = QDateTime::currentDateTime();
+    m_state->setLastSwitch(last);
     qDebug() << "[TrayController] switchDialog" << (ok ? "OK" : "FALLO") << "path=" << path;
 }
 
@@ -248,8 +248,8 @@ void TrayController::onForegroundChanged(quintptr hwndValue)
         qDebug() << "[TrayController] Foreground: file dialog" << hwnd;
         m_lastDialogHwnd = hwnd;
 
-        const bool autoSwitchOn = m_window && m_window->autoSwitchEnabled();
-        const bool masterOn = m_window && m_window->masterEnabled();
+        const bool autoSwitchOn = m_state->autoSwitch();
+        const bool masterOn = m_state->enabled();
         const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
         const bool managerFresh = m_lastManagerHwnd &&
                                   (nowMs - m_lastManagerSeenMs) < kManagerFreshnessMs;

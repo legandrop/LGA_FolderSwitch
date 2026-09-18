@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-18 (3)
+
+La ventana de Settings eran tres checkboxes en castellano: no decia si la app estaba andando, el
+path se cortaba contra el borde derecho y un fallo del cambio de carpeta o del hotkey solo quedaba
+en el log. Ahora, en ingles y con el estilo de LGA_VideoDownloader: tarjeta de estado con
+`Pause`/`Resume`, ultima carpeta con origen, resultado (`Applied`/`Not applied`) y hora, y
+opciones con el atajo y su aviso `In use` si `RegisterHotKey` fallo. El estado vive en
+`AppState`, unica fuente de verdad de On/Paused con las mismas claves de siempre en el registro.
+La ventana tiene ancho fijo de 440 y el alto de su contenido (396 a 420 px).
+
+[commit sugerido: "feat: ventana de Settings redisenada, en ingles"]
+
 ## 2026-09-18 (2)
 
 La hoja de estilo arrancaba con `QWidget { background-color }` global: pinta cada contenedor con

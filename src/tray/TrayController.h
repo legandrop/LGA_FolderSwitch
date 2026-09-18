@@ -9,6 +9,7 @@
 class QSystemTrayIcon;
 class QMenu;
 class MainWindow;
+class AppState;
 class ForegroundWatcher;
 class HotkeyFilter;
 class UpdateService;
@@ -49,6 +50,7 @@ private:
     void scheduleSwitch(HWND dialogHwnd, int delayMs);
     void performSwitch(HWND dialogHwnd);
 
+    AppState *m_state = nullptr;
     QSystemTrayIcon *m_tray = nullptr;
     QMenu *m_menu = nullptr;
     MainWindow *m_window = nullptr;
