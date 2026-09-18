@@ -37,12 +37,19 @@ goto parse_args
 cd /d "%APP_ROOT%"
 
 REM La app vive en la bandeja: una instancia viva bloquea el .exe y el link falla
-REM con "Permission denied". Se cierra SOLO la copia que corre desde el arbol que se va a
-REM compilar (tools\close_by_path.ps1); antes era "taskkill /F /IM", que cerraba tambien la
-REM instalada. Si la instalada esta abierta, el QLockFile hace salir en silencio a la nueva:
-REM para probar el build hay que cerrar la instalada a mano. Sale con 2 solo si rechazo los
-REM parametros.
-powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%APP_ROOT%tools\close_by_path.ps1" -ExeName LGA_FolderSwitch.exe -ExactPath "%APP_ROOT%%BUILD_DIR%\LGA_FolderSwitch.exe"
+REM con "Permission denied". Cierre por ruta real (tools\close_by_path.ps1), nunca por nombre:
+REM - Sin --no-run (compila y LANZA): FolderSwitch es de instancia unica (QLockFile: con otra
+REM   copia abierta, la nueva sale en silencio), asi que se cierran TODAS las copias (la
+REM   instalada, la de build, las de otros checkouts) y la nueva queda como la unica. No lanza
+REM   auxiliares: sin -Helpers.
+REM - Con --no-run (el modo de toda corrida automatizada): SOLO la copia del arbol que se va a
+REM   pisar (%BUILD_DIR%).
+REM Sale con 2 solo si rechazo los parametros: ahi se corta.
+if "%NO_RUN%"=="true" (
+    powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%APP_ROOT%tools\close_by_path.ps1" -ExeName LGA_FolderSwitch.exe -ExactPath "%APP_ROOT%%BUILD_DIR%\LGA_FolderSwitch.exe"
+) else (
+    powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%APP_ROOT%tools\close_by_path.ps1" -ExeName LGA_FolderSwitch.exe -AllInstances
+)
 if %ERRORLEVEL% equ 2 ( echo Error: close_by_path rechazo los parametros & exit /b 1 )
 ping -n 2 127.0.0.1 >nul
 

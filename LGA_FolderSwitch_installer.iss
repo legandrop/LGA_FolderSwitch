@@ -70,24 +70,27 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 
 [Code]
 // FolderSwitch vive en la bandeja y una instancia activa bloquea el .exe instalado, asi que se
-// cierra antes de instalar y antes de desinstalar. Se cierra POR RUTA, nunca por nombre:
-// close_by_path.ps1 -ExeName {#MyAppExeName} -Prefix {app} cierra solo las copias que corren
-// desde la carpeta que se va a pisar o a borrar. Antes era un "taskkill /F /IM" en
-// InitializeSetup, que ademas corria ANTES de elegir carpeta: se llevaba una copia de build o de
-// otra instalacion, y tambien la que el usuario tuviera abierta si despues cancelaba el setup.
+// cierra antes de instalar y antes de desinstalar, POR RUTA real y nunca por nombre
+// (close_by_path.ps1). Antes era un "taskkill /F /IM" en InitializeSetup, que ademas corria
+// ANTES de elegir carpeta y cerraba la copia abierta aunque despues se cancelara el setup.
+//   - Al INSTALAR, FolderSwitch es de instancia unica (QLockFile: con otra copia abierta, la
+//     nueva sale en silencio): -AllInstances cierra TODAS las copias (la instalada, un build,
+//     otro checkout) y la que se instala queda como la unica. No lanza auxiliares: sin -Helpers.
+//   - Al DESINSTALAR, -Prefix {app} cierra solo las copias que corren desde la carpeta que se va
+//     a borrar; un build o un checkout quedan vivos.
 // Si PowerShell no esta, o {app} no pasa las guardas del script (menos de dos carpetas debajo de
 // la unidad), no se cierra nada e Inno avisa "archivo en uso": es la direccion segura. Las
 // comillas van como #34 y powershell.exe con la ruta de {sys}, como en SceneBuilder.
-procedure CloseAppByPath(const ScriptPath: String);
+procedure CloseAppByPath(const ScriptPath, CloseParams: String);
 var
   ResultCode: Integer;
   Params: String;
 begin
   Params := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ' + #34 + ScriptPath + #34 +
-            ' -ExeName {#MyAppExeName} -Prefix ' + #34 + ExpandConstant('{app}') + #34;
+            ' ' + CloseParams;
   if Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Params, '', SW_HIDE,
           ewWaitUntilTerminated, ResultCode) then
-    Log('close_by_path termino con codigo ' + IntToStr(ResultCode))
+    Log('close_by_path ' + CloseParams + ': codigo ' + IntToStr(ResultCode))
   else
     Log('close_by_path no se pudo ejecutar: no se cierra nada');
 end;
@@ -97,7 +100,7 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
   ExtractTemporaryFile('close_by_path.ps1');
-  CloseAppByPath(ExpandConstant('{tmp}\close_by_path.ps1'));
+  CloseAppByPath(ExpandConstant('{tmp}\close_by_path.ps1'), '-ExeName {#MyAppExeName} -AllInstances');
   // Stop-Process es asincronico: se le da tiempo al proceso a soltar sus archivos antes de
   // copiar encima. Mismo bloque que SceneBuilder y MediaTools.
   Sleep(1500);
@@ -113,7 +116,7 @@ begin
   ScriptPath := ExpandConstant('{app}\tools\close_by_path.ps1');
   if FileExists(ScriptPath) then
   begin
-    CloseAppByPath(ScriptPath);
+    CloseAppByPath(ScriptPath, '-ExeName {#MyAppExeName} -Prefix ' + #34 + ExpandConstant('{app}') + #34);
     // El desinstalador borra {app} enseguida: la misma espera que en PrepareToInstall, para
     // que el proceso cerrado suelte el .exe y la carpeta se pueda borrar entera.
     Sleep(1500);

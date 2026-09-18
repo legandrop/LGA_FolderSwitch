@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-18 (11)
+
+FolderSwitch es de instancia unica (con otra copia abierta, la nueva sale en silencio por el
+`QLockFile`), pero `compilar.bat` y el instalador cerraban solo la copia que iban a pisar: con otra
+copia abierta, la compilada o la recien instalada no arrancaba. Ahora `compilar.bat` sin
+`--no-run` y `PrepareToInstall` cierran TODAS las copias de la app con `tools\close_by_path.ps1`
+rev 4 de la Base (`-AllInstances`; la app no lanza auxiliares). `compilar.bat --no-run` sigue
+cerrando solo el exe del arbol que compila, y el desinstalador solo lo que corre desde `{app}`.
+Probado con procesos senuelo y con un `.iss` minimo de prueba.
+
+[commit sugerido: "fix: compilar e instalador cierran todas las instancias"]
+
 ## 2026-09-18 (10)
 
 La version pasa a 0.10: el minor lleva dos digitos. El auto-update no la hubiera entendido:
