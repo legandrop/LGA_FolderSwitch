@@ -50,6 +50,8 @@ set(SOURCES
     src/updates/UpdateService.cpp
     src/updates/VersionCompare.cpp
     src/qa/UiShot.cpp
+    src/ui/Theme.cpp
+    src/ui/UiWidgets.cpp
 )
 
 set(HEADERS
@@ -66,6 +68,8 @@ set(HEADERS
     src/updates/UpdateService.h
     src/updates/VersionCompare.h
     src/qa/UiShot.h
+    src/ui/Theme.h
+    src/ui/UiWidgets.h
 )
 
 add_executable(${PROJECT_NAME}

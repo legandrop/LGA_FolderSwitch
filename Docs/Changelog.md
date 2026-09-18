@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-18 (2)
+
+La hoja de estilo arrancaba con `QWidget { background-color }` global: pinta cada contenedor con
+el fondo de la ventana y deja rectangulos de otro color adentro de cualquier tarjeta. Tambien el
+checkbox tildado era un cuadrado violeta sin tilde. Se reemplaza `dark_theme.qss` por `Theme`,
+copia recortada del de LGA_VideoDownloader: mismos tokens, paleta oscura como red para lo que
+ninguna regla nombra (tooltips, QMessageBox, progreso), reglas por objectName, y la misma Inter
+embebida (`Inter-*.ttf` en vez de `Inter_18pt-*`). Entran `ElidedLabel`, `Chip` e iconos
+vectoriales de VD. La tilde es un PNG: el exe no carga Qt6Svg y el deploy no lleva `qsvg`.
+
+[commit sugerido: "feat: tema LGA compartido con Video Downloader"]
+
 ## 2026-09-18
 
 No habia forma de ver la ventana sin abrirla en el escritorio. Se suma `--ui-shot <estado>

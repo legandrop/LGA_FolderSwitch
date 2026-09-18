@@ -2,6 +2,7 @@
 #include "core/DialogSwitcher.h"
 #include "windows/AutoStart.h"
 #include "qa/UiShot.h"
+#include "ui/Theme.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -126,21 +127,8 @@ static const char kBuildVersionMarker[] = "LGA_FOLDERSWITCH_BUILD_VERSION=" FOLD
 // --ui-shot dibuje con exactamente el mismo estilo.
 static void applyAppStyle(QApplication &app)
 {
-    const QStringList fontFiles = {
-        ":/fonts/Inter_18pt-Regular.ttf",
-        ":/fonts/Inter_18pt-Medium.ttf",
-    };
-    for (const QString &f : fontFiles) {
-        QFontDatabase::addApplicationFont(f);
-    }
-
+    Theme::apply(app);
     app.setWindowIcon(QIcon(":/icons/LGA_FolderSwitch.png"));
-
-    QFile qssFile(":/styles/dark_theme.qss");
-    if (qssFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qApp->setStyleSheet(QString::fromUtf8(qssFile.readAll()));
-        qssFile.close();
-    }
 }
 
 int main(int argc, char *argv[])
