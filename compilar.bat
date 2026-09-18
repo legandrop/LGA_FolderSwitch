@@ -99,8 +99,11 @@ REM ============================================================
 REM Lista canonica, relativa al arbol de build. Derivada de find_package(Qt6
 REM COMPONENTS Core Gui Widgets Svg Network) en CMakeLists.txt. El plugin TLS
 REM (tls\qschannelbackend.dll) va porque sin el QNetworkAccessManager falla todo
-REM HTTPS en silencio: el chequeo de updates daria error de red siempre.
-set "DEP_LIST=libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll Qt6Core.dll Qt6Gui.dll Qt6Widgets.dll Qt6Svg.dll Qt6Network.dll platforms\qwindows.dll tls\qschannelbackend.dll"
+REM HTTPS en silencio: el chequeo de updates daria error de red siempre. El plugin
+REM platforms\qoffscreen.dll va porque sin el una corrida con QT_QPA_PLATFORM=offscreen
+REM (--ui-shot, QA headless) no arranca y Qt muestra un cartel fatal en el escritorio en vez
+REM de fallar por consola. Solo va al build: deploy.bat arma su propia lista.
+set "DEP_LIST=libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll Qt6Core.dll Qt6Gui.dll Qt6Widgets.dll Qt6Svg.dll Qt6Network.dll platforms\qwindows.dll platforms\qoffscreen.dll tls\qschannelbackend.dll"
 
 echo Verificando dependencias de runtime...
 set DEPS_MISSING=false
@@ -172,6 +175,7 @@ call :copy_dep "%QT_DIR%\bin" "" Qt6Widgets.dll
 call :copy_dep "%QT_DIR%\bin" "" Qt6Svg.dll
 call :copy_dep "%QT_DIR%\bin" "" Qt6Network.dll
 call :copy_dep "%QT_DIR%\plugins\platforms" "platforms" qwindows.dll
+call :copy_dep "%QT_DIR%\plugins\platforms" "platforms" qoffscreen.dll
 call :copy_dep "%QT_DIR%\plugins\tls" "tls" qschannelbackend.dll
 goto :eof
 

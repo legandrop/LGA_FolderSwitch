@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-18 (9)
+
+`--ui-shot` no andaba en el build normal: `compilar.bat` solo copiaba el plugin `qwindows`, y
+una corrida con `QT_QPA_PLATFORM=offscreen` no arrancaba y Qt mostraba un cartel fatal en el
+escritorio. Ahora `compilar.bat` verifica y copia tambien `platforms\qoffscreen.dll` junto al
+exe, en `build\` y en `build-release\`. `deploy.bat` no cambia: arma su propia lista.
+
+[commit sugerido: "fix: compilar.bat deja qoffscreen.dll junto al exe para --ui-shot"]
+
 ## 2026-09-18 (8)
 
 El repo no tenia `.gitattributes`: Git guardaba los bytes como llegaban, con nueve archivos en
