@@ -300,10 +300,10 @@ REM El instalador corre en primer plano para que las preguntas de release aparez
 REM recien cuando el wizard cierra.
 REM Con --no-run o sin consola no se pregunta nada de esto (ver arriba, INTERACTIVE).
 REM
-REM Sin etiquetas ni goto nuevos a proposito: este .bat esta en LF, y con LF cmd.exe calcula mal
-REM donde empieza cada linea al buscar una etiqueta. Un goto a una etiqueta nueva de este tramo
-REM ("after_local") fallo con "The system cannot find the batch label specified" en la prueba con
-REM dobles. Se resuelve con una bandera; el arreglo de fondo es pasar los .bat a CRLF.
+REM Se resuelve con una bandera y no con un goto: cuando este .bat estaba en LF, cmd.exe calculaba
+REM mal donde empieza cada linea al buscar una etiqueta, y un goto a una etiqueta nueva de este
+REM tramo ("after_local") fallo con "The system cannot find the batch label specified". Hoy los
+REM .bat van en CRLF (.gitattributes), que es lo que cmd.exe necesita.
 echo.
 set "OFFER_LOCAL=1"
 if defined NO_RUN (
@@ -406,7 +406,7 @@ if /i "!COMMIT_CREATED!"=="true" (
 
 REM El instalador y el SHA256SUMS de ESTA corrida tienen que estar antes de crear el tag: sin el
 REM SHA256SUMS la release quedaria publicada sin el hash que pide el contrato de update. Van antes
-REM del goto de abajo y sin goto propio (ver la nota sobre LF en el tramo de instalar local).
+REM del goto de abajo, sin goto propio (ver la nota en el tramo de instalar local).
 if not exist "%OUTPUT_EXE%" (
     echo ERROR: No se encontro el instalador: %OUTPUT_EXE%
     set "HAD_ERROR=true"
