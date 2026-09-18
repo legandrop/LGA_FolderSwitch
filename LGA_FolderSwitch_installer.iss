@@ -1,3 +1,11 @@
+; LGA_FolderSwitch_installer.iss -- FUENTE ESCRITA A MANO, no generada.
+;
+; A diferencia de las otras apps LGA (LGA_Base_QT_C_Py/docs/Doc_Instaladores_Inno.md: "los .iss
+; son GENERADOS" por su instalador.bat), este archivo es el que se edita. instalador.bat solo le
+; pasa la version con /DMyAppVersion (la fuente unica es CMakeLists.txt) y no lo reescribe.
+; El [Code] de la prueba G3 (Doc_Instaladores_Inno.md 8, .iss minimo con AppId de prueba) se
+; copia de aca, tal cual.
+
 #define MyAppName "LGA FolderSwitch"
 #ifndef MyAppVersion
 #define MyAppVersion "0.1"
@@ -90,6 +98,9 @@ begin
   Result := '';
   ExtractTemporaryFile('close_by_path.ps1');
   CloseAppByPath(ExpandConstant('{tmp}\close_by_path.ps1'));
+  // Stop-Process es asincronico: se le da tiempo al proceso a soltar sus archivos antes de
+  // copiar encima. Mismo bloque que SceneBuilder y MediaTools.
+  Sleep(1500);
 end;
 
 // Al desinstalar {app} ya es la carpeta instalada; el script es la copia de {app}\tools. Si no
@@ -101,7 +112,12 @@ begin
   Result := True;
   ScriptPath := ExpandConstant('{app}\tools\close_by_path.ps1');
   if FileExists(ScriptPath) then
-    CloseAppByPath(ScriptPath)
+  begin
+    CloseAppByPath(ScriptPath);
+    // El desinstalador borra {app} enseguida: la misma espera que en PrepareToInstall, para
+    // que el proceso cerrado suelte el .exe y la carpeta se pueda borrar entera.
+    Sleep(1500);
+  end
   else
     Log('No esta ' + ScriptPath + ': no se cierra nada');
 end;

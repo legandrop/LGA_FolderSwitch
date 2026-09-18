@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-18 (5)
+
+`instalador.bat` preguntaba con `choice` aunque no hubiera consola: con la entrada redirigida
+podia ejecutar el instalador o publicar, no tenia `--no-run`, salia en 0 aunque fallara la
+publicacion y no generaba `SHA256SUMS`. Ahora detecta la consola al principio y, sin ella, solo
+genera en local. Suma `--no-run`, sale con 1 si falla un paso de publicacion, borra el
+`SHA256SUMS` viejo antes de ISCC, genera el nuevo (sale con 1 si no puede) y lo exige antes del
+tag. El `.iss` dice en su cabecera que es fuente a mano y espera 1,5 s tras cerrar la app al
+instalar y al desinstalar. Sin etiquetas nuevas: con los `.bat` en LF, un `goto` a una etiqueta
+nueva fallo en la prueba.
+
+[commit sugerido: "fix: instalador sin consola no ejecuta ni publica, --no-run y SHA256SUMS"]
+
 ## 2026-09-18 (4)
 
 No habia ayuda ni forma de ver la version, y pausar la app era un checkbox mas. El `?` de la

@@ -1,5 +1,25 @@
 @echo off
 setlocal enabledelayedexpansion
+REM Uso: instalador.bat [--no-run]
+REM   --no-run  arma el instalador y su SHA256SUMS y no ofrece ejecutarlo ni revelarlo en el
+REM             Explorer. La parte de commit y release sigue igual.
+set "NO_RUN="
+if /I "%~1"=="--no-run" set "NO_RUN=1"
+REM Sin consola (corrida encadenada, automatizada o con la entrada redirigida) un choice puede
+REM leer la respuesta de esa entrada y terminar ejecutando el instalador, abriendo el Explorer o
+REM publicando. Se detecta ANTES de cualquier pregunta: sin consola no se ejecuta, no se revela ni
+REM se publica nada, y las preguntas del preflight se resuelven como "solo generacion local". Si
+REM PowerShell no corre, se toma como sin consola: no hacer nada es la direccion segura. Mismo
+REM criterio que instalador.bat de LGA_VideoDownloader y LGA_SceneBuilder.
+set "INTERACTIVE=1"
+powershell -NoProfile -NonInteractive -Command "if ([Console]::IsInputRedirected) { exit 3 } else { exit 0 }"
+if errorlevel 1 set "INTERACTIVE="
+REM Codigo de salida deliberado (Doc_Migracion_Scripts_Build_Windows.md de LGA_Base_QT_C_Py,
+REM 5.12): HAD_ERROR marca que un paso de PUBLICACION que se intento fallo (git add/commit/push,
+REM tag, gh release). Se inicializa aca arriba para que no herede el valor del entorno. NO la
+REM levanta lo que se saltea a proposito (el usuario dice que no, sin consola, gh ausente), ni el
+REM refresco del manifiesto, que falla en silencio por diseno.
+set "HAD_ERROR=false"
 cd /d "%~dp0"
 set "SCRIPT_DIR=%~dp0"
 set "INSTALLER_DIR=%SCRIPT_DIR%installer"
@@ -113,13 +133,17 @@ if /i "!GITHUB_READY!" NEQ "true" (
     echo Los chequeos de GitHub fallaron.
     echo Se podra generar el instalador local, pero no publicar la release desde este .bat.
     echo.
-    choice /C YN /M "Continuar solo con la generacion local del instalador?"
-    if !errorlevel! NEQ 1 (
-        echo Operacion cancelada por el usuario.
-        pause
-        exit /b 1
+    if not defined INTERACTIVE (
+        echo Sin consola interactiva: se sigue solo con la generacion local, sin preguntar.
+    ) else (
+        choice /C YN /M "Continuar solo con la generacion local del instalador?"
+        if !errorlevel! NEQ 1 (
+            echo Operacion cancelada por el usuario.
+            pause
+            exit /b 1
+        )
+        echo OK: Se continuara solo con la generacion local del instalador.
     )
-    echo OK: Se continuara solo con la generacion local del instalador.
     set "GITHUB_LOCAL_ONLY_CONFIRMED=true"
 )
 
@@ -215,20 +239,32 @@ if /i "!GITHUB_READY!" NEQ "true" if /i "!GITHUB_LOCAL_ONLY_CONFIRMED!" NEQ "tru
     echo No se podra publicar la release v%VERSION% desde este .bat.
     echo Se podra generar el instalador local igualmente.
     echo.
-    choice /C YN /M "Continuar solo con la generacion local del instalador?"
-    if !errorlevel! NEQ 1 (
-        echo Operacion cancelada por el usuario.
-        pause
-        exit /b 1
+    if not defined INTERACTIVE (
+        echo Sin consola interactiva: se sigue solo con la generacion local, sin preguntar.
+    ) else (
+        choice /C YN /M "Continuar solo con la generacion local del instalador?"
+        if !errorlevel! NEQ 1 (
+            echo Operacion cancelada por el usuario.
+            pause
+            exit /b 1
+        )
+        echo OK: Se continuara solo con la generacion local del instalador.
     )
-    echo OK: Se continuara solo con la generacion local del instalador.
     set "GITHUB_LOCAL_ONLY_CONFIRMED=true"
 )
 
 if not exist "%INSTALLER_DIR%" mkdir "%INSTALLER_DIR%"
 
 set "OUTPUT_EXE=%INSTALLER_DIR%\LGA_FolderSwitch_Setup_v%VERSION%.exe"
+set "SUMS_FILE=%INSTALLER_DIR%\SHA256SUMS"
 if exist "%OUTPUT_EXE%" del /F /Q "%OUTPUT_EXE%" >nul 2>nul
+REM El SHA256SUMS de una corrida anterior se borra ANTES de compilar: si esta corrida no llega
+REM a generarlo, no puede quedar uno viejo para publicarse junto al instalador nuevo.
+if exist "%SUMS_FILE%" del /F /Q "%SUMS_FILE%" >nul 2>nul
+if exist "%SUMS_FILE%" (
+    echo ERROR: No se pudo borrar el SHA256SUMS anterior: %SUMS_FILE%
+    exit /b 1
+)
 
 %ISCC% /DMyAppVersion=%VERSION% LGA_FolderSwitch_installer.iss
 if %ERRORLEVEL% neq 0 (
@@ -241,6 +277,20 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
+REM SHA256SUMS del release, formato sha256sum ("hash  nombre", LF, sin BOM), como en
+REM LGA_VideoDownloader. El auto-update de esta app hoy verifica con el digest del manifiesto de
+REM LGA_Updates, pero el contrato de Doc_Instaladores_Inno.md 7 pide este archivo en todo release.
+powershell -NoProfile -NonInteractive -Command "$n='LGA_FolderSwitch_Setup_v%VERSION%.exe'; $h=(Get-FileHash -Algorithm SHA256 ('installer\'+$n)).Hash.ToLower(); [IO.File]::WriteAllText('installer\SHA256SUMS', $h+'  '+$n+[char]10)"
+if errorlevel 1 (
+    echo ERROR: No se pudo generar installer\SHA256SUMS.
+    exit /b 1
+)
+if not exist "%SUMS_FILE%" (
+    echo ERROR: No se genero installer\SHA256SUMS.
+    exit /b 1
+)
+echo SHA256SUMS: %SUMS_FILE%
+
 echo.
 echo Instalador creado: %OUTPUT_EXE%
 
@@ -248,22 +298,43 @@ REM ---------------------------------------------------------------- instalar lo
 REM Primero se ofrece instalar / revelar el .exe; recien despues commit + GitHub.
 REM El instalador corre en primer plano para que las preguntas de release aparezcan
 REM recien cuando el wizard cierra.
+REM Con --no-run o sin consola no se pregunta nada de esto (ver arriba, INTERACTIVE).
+REM
+REM Sin etiquetas ni goto nuevos a proposito: este .bat esta en LF, y con LF cmd.exe calcula mal
+REM donde empieza cada linea al buscar una etiqueta. Un goto a una etiqueta nueva de este tramo
+REM ("after_local") fallo con "The system cannot find the batch label specified" en la prueba con
+REM dobles. Se resuelve con una bandera; el arreglo de fondo es pasar los .bat a CRLF.
 echo.
-choice /C YN /M "Desea ejecutar el instalador ahora mismo (instalar local)?"
-if !errorlevel! EQU 1 (
-    echo Ejecutando el instalador...
-    "%OUTPUT_EXE%"
-) else (
-    echo Instalador no ejecutado.
+set "OFFER_LOCAL=1"
+if defined NO_RUN (
+    echo Instalador no ejecutado ni revelado [--no-run].
+    set "OFFER_LOCAL="
+)
+if not defined INTERACTIVE (
+    echo Sin consola interactiva: el instalador no se ejecuta ni se revela.
+    set "OFFER_LOCAL="
+)
+if defined OFFER_LOCAL (
+    choice /C YN /M "Desea ejecutar el instalador ahora mismo (instalar local)?"
+    if !errorlevel! EQU 1 (
+        echo Ejecutando el instalador...
+        "%OUTPUT_EXE%"
+    ) else (
+        echo Instalador no ejecutado.
+    )
+
+    choice /C YN /M "Desea revelar el instalador en Windows Explorer?"
+    if !errorlevel! EQU 1 (
+        explorer /select,"%OUTPUT_EXE%"
+    ) else (
+        echo No se abrio Windows Explorer.
+    )
 )
 
-choice /C YN /M "Desea revelar el instalador en Windows Explorer?"
-if !errorlevel! EQU 1 (
-    explorer /select,"%OUTPUT_EXE%"
-) else (
-    echo No se abrio Windows Explorer.
+if not defined INTERACTIVE (
+    echo Sin consola interactiva: no se ofrece commit ni release.
+    goto :END
 )
-
 if /i "!GITHUB_READY!" NEQ "true" goto :END
 
 echo.
@@ -289,11 +360,15 @@ if "!HAS_INSTALLER_CHANGES!"=="true" (
         git add -A
         if !errorlevel! NEQ 0 (
             echo ERROR: git add fallo.
+            set "HAD_ERROR=true"
             set "RELEASE_ALLOWED=false"
         ) else (
             git commit -m "installer_v%VERSION%"
             if !errorlevel! NEQ 0 (
                 echo AVISO: git commit retorno codigo !errorlevel!.
+                REM Si el usuario elige seguir, la release se publica igual, taggeando el ultimo
+                REM commit que haya, y el script termina en 1: el commit que se intento fallo.
+                set "HAD_ERROR=true"
                 echo Puede que no haya cambios nuevos o que haya ocurrido un error.
                 echo.
                 choice /C YN /M "Desea continuar con la release sin un commit nuevo?"
@@ -323,9 +398,24 @@ if /i "!COMMIT_CREATED!"=="true" (
     git push origin "!CURRENT_BRANCH!"
     if !errorlevel! NEQ 0 (
         echo ERROR: git push fallo.
+        set "HAD_ERROR=true"
         echo Verificar conexion a internet y permisos del repositorio.
         set "RELEASE_ALLOWED=false"
     )
+)
+
+REM El instalador y el SHA256SUMS de ESTA corrida tienen que estar antes de crear el tag: sin el
+REM SHA256SUMS la release quedaria publicada sin el hash que pide el contrato de update. Van antes
+REM del goto de abajo y sin goto propio (ver la nota sobre LF en el tramo de instalar local).
+if not exist "%OUTPUT_EXE%" (
+    echo ERROR: No se encontro el instalador: %OUTPUT_EXE%
+    set "HAD_ERROR=true"
+    set "RELEASE_ALLOWED=false"
+)
+if not exist "%SUMS_FILE%" (
+    echo ERROR: No se encontro %SUMS_FILE%. No se crea el tag ni la release.
+    set "HAD_ERROR=true"
+    set "RELEASE_ALLOWED=false"
 )
 
 if /i "!RELEASE_ALLOWED!" NEQ "true" goto :END
@@ -334,17 +424,13 @@ echo.
 choice /C YN /M "Desea subir el instalador como release v%VERSION% a GitHub?"
 if !errorlevel! NEQ 1 goto :END
 
-if not exist "%OUTPUT_EXE%" (
-    echo ERROR: No se encontro el instalador: %OUTPUT_EXE%
-    goto :END
-)
-
 echo.
 echo Creando tag v%VERSION%...
 git tag -a "v%VERSION%" -m "Release v%VERSION%"
 if !errorlevel! NEQ 0 (
     echo ERROR: No se pudo crear el tag v%VERSION%.
     echo Es posible que el tag ya exista.
+    set "HAD_ERROR=true"
     goto :END
 )
 
@@ -353,14 +439,16 @@ git push origin "v%VERSION%"
 if !errorlevel! NEQ 0 (
     echo ERROR: No se pudo hacer push del tag v%VERSION%.
     echo El tag local fue creado, pero no se publico en origin.
+    set "HAD_ERROR=true"
     goto :END
 )
 
 echo.
 echo Creando release en GitHub...
-"!GH_CMD!" release create "v%VERSION%" "%OUTPUT_EXE%" --repo "%PUBLIC_RELEASE_REPO%" --target "main" --title "v%VERSION%" --notes "Release v%VERSION%"
+"!GH_CMD!" release create "v%VERSION%" "%OUTPUT_EXE%" "%SUMS_FILE%" --repo "%PUBLIC_RELEASE_REPO%" --target "main" --title "v%VERSION%" --notes "Release v%VERSION%"
 if !errorlevel! NEQ 0 (
     echo ERROR: No se pudo crear la release en GitHub.
+    set "HAD_ERROR=true"
     echo.
     echo El commit y el push del branch ya fueron hechos si correspondia.
     echo El tag v%VERSION% ya fue creado y subido a origin.
@@ -408,4 +496,6 @@ if !errorlevel! EQU 0 (
 )
 
 :END
-endlocal
+set "FINAL_EXIT=0"
+if /i "!HAD_ERROR!"=="true" set "FINAL_EXIT=1"
+endlocal & exit /b %FINAL_EXIT%
