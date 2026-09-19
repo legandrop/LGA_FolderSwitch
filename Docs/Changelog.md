@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-18 (15)
+
+El repo no tenia roadmap ni registro de decisiones, que la Base pide a toda app LGA: lo pendiente
+(observaciones de revisiones, arreglos diferidos) y las decisiones de Lega quedaban solo en la
+conversacion. Ahora estan `Docs/Doc_Roadmap.md` (registro compartido LGA, checklist de app nueva,
+carpeta de un manager cerrado con la X, respuesta de "Check now", marco nativo en otros entornos) y
+`Docs/Doc_Decisiones.md` (D-01 abierta: como responde "Check now"; y las decididas de la ventana,
+los updates, el foco, las tarjetas, las recientes y la configuracion en AppData).
+
+[commit sugerido: "docs: roadmap y registro de decisiones"]
+
 ## 2026-09-18 (14)
 
 El menu de recientes era un `QMenu` con la sombra dura de Windows y un margen de icono enorme.
@@ -224,7 +235,7 @@ con ISCC.
 
 La entrada de `Run` nunca existio en el registro real, y por eso ningun reinicio la
 ejecuto. Las escrituras "a mano" se habian hecho desde una terminal empaquetada en
-MSIX (la app de escritorio de Claude Code), que tiene registro virtualizado por
+MSIX (la terminal de una app de la Microsoft Store), que tiene registro virtualizado por
 paquete: la escritura va a un hive privado, releerla desde ahi la muestra puesta, y
 Windows no la ve. El sintoma que lo delato: la app abierta por el usuario loguea
 `valor en Run: "(ninguno)"` y la misma app lanzada desde esa terminal loguea el valor.
