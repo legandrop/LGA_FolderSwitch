@@ -2,18 +2,21 @@
 #include "ui/Theme.h"
 #include "ui/UiWidgets.h"
 
+#include <QDesktopServices>
 #include <QEvent>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
+#include <QUrl>
 #include <QVBoxLayout>
 
 namespace {
 
 constexpr int DIALOG_WIDTH = 400;
-constexpr int KEY_COLUMN = 76;
+constexpr auto kGithubUrl = "https://github.com/legandrop";
 
 QLabel *label(const QString &text, const char *name, QWidget *parent)
 {
@@ -27,15 +30,38 @@ QString strong(const QString &text)
     return QStringLiteral("<span style=\"color:%1;\">%2</span>").arg(QLatin1String(Theme::kTextBright), text);
 }
 
-QHBoxLayout *keyRow(const QString &key, QWidget *parent)
+// Link a GitHub como el GitHubLinkLabel del Help de FileManager S3: texto plano subrayado que
+// cambia de color con el mouse encima. Un <a> dentro de un QLabel no tiene hover, por eso es un
+// label propio. El color es mas claro que el de las otras apps, que casi no se lee sobre oscuro.
+class GithubLink : public QLabel
 {
-    auto *row = new QHBoxLayout();
-    row->setSpacing(12);
-    auto *keyLabel = label(key, "kvKey", parent);
-    keyLabel->setFixedWidth(KEY_COLUMN);
-    row->addWidget(keyLabel);
-    return row;
-}
+public:
+    explicit GithubLink(QWidget *parent) : QLabel(QStringLiteral("github.com/legandrop"), parent)
+    {
+        setObjectName(QStringLiteral("helpLink"));
+        setCursor(Qt::PointingHandCursor);
+        setAttribute(Qt::WA_Hover);
+        setToolTip(QLatin1String(kGithubUrl));
+        setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    }
+
+protected:
+    bool event(QEvent *event) override
+    {
+        if (event->type() == QEvent::HoverEnter || event->type() == QEvent::HoverLeave) {
+            Ui::setStyleProperty(this, "hover", event->type() == QEvent::HoverEnter);
+        }
+        return QLabel::event(event);
+    }
+
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton && rect().contains(event->pos())) {
+            QDesktopServices::openUrl(QUrl(QLatin1String(kGithubUrl)));
+        }
+        QLabel::mouseReleaseEvent(event);
+    }
+};
 
 } // namespace
 
@@ -77,6 +103,10 @@ HelpDialog::HelpDialog(QWidget *parent)
     layout->setContentsMargins(22, 18, 22, 18);
     layout->setSpacing(12);
 
+    // Encabezado igual al Help de las otras apps LGA (HelpTab de FileManager S3): nombre en violeta,
+    // version en gris claro, "Developed by" y el link, todo pegado sin aire entre lineas.
+    auto *header = new QVBoxLayout();
+    header->setSpacing(0);
     auto *titleRow = new QHBoxLayout();
     titleRow->setSpacing(8);
     titleRow->addWidget(label(QStringLiteral("LGA FolderSwitch"), "helpTitle", this), 0, Qt::AlignBaseline);
@@ -86,25 +116,10 @@ HelpDialog::HelpDialog(QWidget *parent)
     Ui::setIcon(close, Icon::X, Theme::color(Theme::kIcon));
     close->setToolTip(QStringLiteral("Close"));
     titleRow->addWidget(close, 0, Qt::AlignVCenter);
-    layout->addLayout(titleRow);
-
-    auto *updatesRow = keyRow(QStringLiteral("Updates"), this);
-    updatesRow->addWidget(label(QStringLiteral("Look for a newer version"), "kvValue", this), 1);
-    auto *check = Ui::button(QStringLiteral("Check now"), QString(), QStringLiteral("sm"), this);
-    check->setObjectName(QStringLiteral("checkButton"));
-    updatesRow->addWidget(check);
-    layout->addLayout(updatesRow);
-
-    auto *authorRow = keyRow(QStringLiteral("Author"), this);
-    auto *author = label(QStringLiteral("Lega Pugliese · <a href=\"https://github.com/legandrop\" "
-                                        "style=\"color:%1; text-decoration:none;\">github.com/legandrop</a>")
-                             .arg(QLatin1String(Theme::kLink)),
-                         "kvValue", this);
-    author->setTextFormat(Qt::RichText);
-    author->setOpenExternalLinks(true);
-    author->setTextInteractionFlags(Qt::TextBrowserInteraction);
-    authorRow->addWidget(author, 1);
-    layout->addLayout(authorRow);
+    header->addLayout(titleRow);
+    header->addWidget(label(QStringLiteral("Developed by Lega Pugliese"), "helpDeveloped", this));
+    header->addWidget(new GithubLink(this));
+    layout->addLayout(header);
 
     auto *rule = new QFrame(this);
     rule->setObjectName(QStringLiteral("helpRule"));
@@ -147,10 +162,9 @@ HelpDialog::HelpDialog(QWidget *parent)
     buttons->addWidget(closeButton);
     layout->addLayout(buttons);
 
-    // Conexiones internas del dialogo (cerrar y pedir el chequeo): ninguna escribe estado.
+    // Conexiones internas del dialogo (cerrar): ninguna escribe estado.
     connect(close, &QPushButton::clicked, this, &QDialog::reject);
     connect(closeButton, &QPushButton::clicked, this, &QDialog::accept);
-    connect(check, &QPushButton::clicked, this, &HelpDialog::checkRequested);
 }
 
 void HelpDialog::fitHeight()

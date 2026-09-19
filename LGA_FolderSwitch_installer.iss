@@ -46,13 +46,19 @@ Source: "deploy\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs create
 Source: "tools\close_by_path.ps1"; Flags: dontcopy
 Source: "tools\close_by_path.ps1"; DestDir: "{app}\tools"; Flags: ignoreversion
 
-; Inno solo desinstala los archivos que copio el. El unico que la app escribe en {app} es
-; debug.log (se prende con log=true en config\debug_flags.txt): sin esta seccion queda
-; huerfano y la carpeta no se borra. La config chica no vive en disco: FolderSwitch la guarda
-; con QSettings en formato nativo, o sea en el registro (HKCU\Software\LGA\FolderSwitch), y el
-; desinstalador no la toca a proposito para que sobreviva a una reinstalacion.
+; Inno solo desinstala los archivos que copio el; lo que la app escribe por su cuenta se borra
+; aca para no dejar basura:
+;  - {app}\debug.log (se prende con log=true en config\debug_flags.txt).
+;  - La configuracion y las carpetas recientes: %APPDATA%\LGA\LGA_FolderSwitch\settings.ini
+;    (src/core/AppSettings.cpp). La carpeta LGA solo se borra si queda vacia (otras apps LGA).
+;  - Los instaladores bajados por el auto-update, en %TEMP%\LGA_FolderSwitch_updates.
+; La clave vieja del registro (versiones anteriores) y la entrada de inicio con Windows se borran en
+; CurUninstallStepChanged, abajo.
 [UninstallDelete]
 Type: files; Name: "{app}\debug.log"
+Type: filesandordirs; Name: "{userappdata}\LGA\LGA_FolderSwitch"
+Type: dirifempty; Name: "{userappdata}\LGA"
+Type: filesandordirs; Name: "{%TEMP}\LGA_FolderSwitch_updates"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
@@ -123,4 +129,32 @@ begin
   end
   else
     Log('No esta ' + ScriptPath + ': no se cierra nada');
+end;
+
+// Despues de borrar los archivos: registro que la app deja fuera de {app}.
+//  - HKCU\Software\LGA\FolderSwitch: la configuracion de las versiones anteriores. La app la pasa sola a
+//    AppData al arrancar, pero si se desinstala sin haber corrido una version nueva, sigue ahi.
+//  - El valor LGA_FolderSwitch de HKCU\...\Run (inicio con Windows): SOLO si apunta a ESTA
+//    instalacion. Si apunta a otra copia (build\ de desarrollo) es de esa copia y no se toca:
+//    borrarlo a ciegas fue lo que dejo a la app sin arrancar con Windows.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  RunValue: String;
+begin
+  if CurUninstallStep <> usPostUninstall then
+    exit;
+  if RegDeleteKeyIncludingSubkeys(HKCU, 'Software\LGA\FolderSwitch') then
+    Log('Borrada la configuracion vieja del registro');
+  RegDeleteKeyIfEmpty(HKCU, 'Software\LGA');
+  if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'LGA_FolderSwitch', RunValue) then
+  begin
+    if Pos(Lowercase(AddBackslash(ExpandConstant('{app}'))), Lowercase(RunValue)) > 0 then
+    begin
+      RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'LGA_FolderSwitch');
+      RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run', 'LGA_FolderSwitch');
+      Log('Borrado el inicio con Windows de esta instalacion: ' + RunValue);
+    end
+    else
+      Log('El inicio con Windows apunta a otra copia, no se toca: ' + RunValue);
+  end;
 end;

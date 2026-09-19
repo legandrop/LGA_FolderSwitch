@@ -37,6 +37,8 @@ private slots:
     void quit();
     void onForegroundChanged(quintptr hwnd);
     void onHotkeyPressed();
+    // Ctrl+Alt+Shift+O: menu con las carpetas recientes donde esta el mouse.
+    void onRecentHotkeyPressed();
     void checkForUpdatesManual();
 
 private:
@@ -53,6 +55,10 @@ private:
     // Programa (con delay) la inyeccion de path en el dialogo dado.
     void scheduleSwitch(HWND dialogHwnd, int delayMs);
     void performSwitch(HWND dialogHwnd);
+    // Pone la carpeta en el dialogo y deja constancia (ultima carpeta y recientes).
+    void applyFolder(HWND dialogHwnd, const QString &path, const QString &source);
+    // Al salir de un manager se guarda la carpeta en la que estaba (resuelta fuera del hook).
+    void recordManagerFolder(HWND managerHwnd, ManagerType type);
 
     AppState *m_state = nullptr;
     QSystemTrayIcon *m_tray = nullptr;
@@ -78,6 +84,13 @@ private:
     // Ultimo dialog al que ya se le inyecto path, para no re-inyectar en el mismo
     // HWND dos veces seguidas (se resetea cuando volvemos a ver el manager).
     HWND m_lastSwitchedDialogHwnd = nullptr;
+
+    // Ventana en primer plano anterior, si era un manager: al irse de ella se guarda su carpeta.
+    HWND m_prevManagerHwnd = nullptr;
+    ManagerType m_prevManagerType = ManagerType::None;
+
+    // Evita abrir un menu de recientes encima de otro.
+    bool m_recentMenuOpen = false;
 };
 
 #endif // FOLDERSWITCH_TRAYCONTROLLER_H

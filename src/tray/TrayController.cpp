@@ -1,8 +1,10 @@
 #include "tray/TrayController.h"
 #include "ui/MainWindow.h"
 #include "core/AppState.h"
+#include "core/AppSettings.h"
 #include "tray/TrayMenu.h"
 #include "ui/HelpDialog.h"
+#include "ui/RecentFoldersPopup.h"
 #include "core/ForegroundWatcher.h"
 #include "core/HotkeyFilter.h"
 #include "core/WindowUtils.h"
@@ -14,6 +16,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QColor>
+#include <QCursor>
 #include <QDateTime>
 #include <QDebug>
 #include <QIcon>
@@ -74,13 +77,20 @@ TrayController::TrayController(QObject *parent)
 
     m_hotkeyFilter = new HotkeyFilter(this);
     m_state->setHotkeyRegistered(m_hotkeyFilter->isRegistered());
+    m_state->setRecentHotkeyRegistered(m_hotkeyFilter->isRecentRegistered());
     connect(m_hotkeyFilter, &HotkeyFilter::hotkeyPressed, this, &TrayController::onHotkeyPressed);
+    connect(m_hotkeyFilter, &HotkeyFilter::recentHotkeyPressed, this, &TrayController::onRecentHotkeyPressed);
     QCoreApplication::instance()->installNativeEventFilter(m_hotkeyFilter);
 
     // parentWindow es m_window (normalmente oculto): sus dialogos de resultado
     // igual se centran en pantalla al no tener un padre visible.
     m_updateService = new UpdateService(m_window, this);
-    m_updateService->scheduleAutomaticCheck();
+    if (m_state->checkUpdatesAtStartup()) {
+        m_updateService->scheduleAutomaticCheck();
+    } else {
+        qInfo() << "[TrayController] Chequeo de updates al arrancar: desactivado por el usuario";
+    }
+    connect(m_window, &MainWindow::checkUpdatesRequested, this, &TrayController::checkForUpdatesManual);
 
     runFirstLaunchSetupIfNeeded();
 }
@@ -93,8 +103,8 @@ TrayController::TrayController(QObject *parent)
 // instalada: un arranque desde build/ no consume el primer arranque de la instalacion futura.
 void TrayController::runFirstLaunchSetupIfNeeded()
 {
-    QSettings settings(QStringLiteral("LGA"), QStringLiteral("FolderSwitch"));
-    if (settings.value(QStringLiteral("firstRunCompleted"), false).toBool()) {
+    const auto settings = AppSettings::open();
+    if (settings->value(QStringLiteral("firstRunCompleted"), false).toBool()) {
         return;
     }
 
@@ -107,7 +117,7 @@ void TrayController::runFirstLaunchSetupIfNeeded()
         return;
     }
 
-    settings.setValue(QStringLiteral("firstRunCompleted"), true);
+    settings->setValue(QStringLiteral("firstRunCompleted"), true);
     const bool ok = AutoStart::setEnabled(true);
     qInfo() << "[TrayController] Primer arranque: inicio con Windows activado ok:" << ok;
     showSettings();
@@ -131,7 +141,6 @@ void TrayController::refreshFromState()
 void TrayController::showHelp()
 {
     HelpDialog dialog(m_window);
-    connect(&dialog, &HelpDialog::checkRequested, this, &TrayController::checkForUpdatesManual);
     dialog.execOver(m_window);
 }
 
@@ -210,14 +219,38 @@ void TrayController::performSwitch(HWND dialogHwnd)
         qDebug() << "[TrayController] No se pudo resolver el path del manager guardado.";
         return;
     }
+    applyFolder(dialogHwnd, path,
+                m_lastManagerType == ManagerType::XYplorer ? QStringLiteral("XYplorer") : QStringLiteral("Explorer"));
+}
+
+void TrayController::applyFolder(HWND dialogHwnd, const QString &path, const QString &source)
+{
     const bool ok = DialogSwitcher::switchDialog(dialogHwnd, path);
     AppState::LastSwitch last;
     last.path = path;
-    last.source = m_lastManagerType == ManagerType::XYplorer ? QStringLiteral("XYplorer") : QStringLiteral("Explorer");
+    last.source = source;
     last.applied = ok;
     last.when = QDateTime::currentDateTime();
     m_state->setLastSwitch(last);
-    qDebug() << "[TrayController] switchDialog" << (ok ? "OK" : "FALLO") << "path=" << path;
+    m_state->addRecentFolder(path);
+    qDebug() << "[TrayController] switchDialog" << (ok ? "OK" : "FALLO") << "path=" << path << "source=" << source;
+}
+
+void TrayController::recordManagerFolder(HWND managerHwnd, ManagerType type)
+{
+    // Diferido: el foreground llega desde el hook de WinEvent, y resolver la carpeta de Explorer
+    // llama a COM. Se hace en el loop normal, ya fuera del callback.
+    QTimer::singleShot(0, this, [this, managerHwnd, type]() {
+        if (!IsWindow(managerHwnd)) {
+            return;
+        }
+        const QString path = type == ManagerType::XYplorer ? FolderResolver::resolveXYplorerPath(managerHwnd)
+                                                           : FolderResolver::resolveExplorerPath(managerHwnd);
+        if (!path.isEmpty()) {
+            m_state->addRecentFolder(path);
+            qDebug() << "[TrayController] Carpeta reciente:" << path;
+        }
+    });
 }
 
 void TrayController::scheduleSwitch(HWND dialogHwnd, int delayMs)
@@ -234,6 +267,13 @@ void TrayController::onForegroundChanged(quintptr hwndValue)
         return;
     }
 
+    // Historial: la carpeta que queda en un manager cuando el usuario se va de el.
+    if (m_prevManagerHwnd && m_prevManagerHwnd != hwnd) {
+        recordManagerFolder(m_prevManagerHwnd, m_prevManagerType);
+        m_prevManagerHwnd = nullptr;
+        m_prevManagerType = ManagerType::None;
+    }
+
     if (WindowUtils::isFileManagerWindow(hwnd)) {
         const bool isExplorer = WindowUtils::isExplorerWindow(hwnd);
         qDebug() << "[TrayController] Foreground:" << (isExplorer ? "Explorer" : "XYplorer") << hwnd;
@@ -241,6 +281,8 @@ void TrayController::onForegroundChanged(quintptr hwndValue)
         m_lastManagerType = isExplorer ? ManagerType::Explorer : ManagerType::XYplorer;
         m_lastManagerSeenMs = QDateTime::currentMSecsSinceEpoch();
         m_lastSwitchedDialogHwnd = nullptr;
+        m_prevManagerHwnd = hwnd;
+        m_prevManagerType = m_lastManagerType;
         // Si el usuario venia de un dialogo que sigue vivo, al volver a ESE
         // dialogo hay que inyectar. Inmune a ventanas intermedias (Alt+Tab).
         if (m_lastDialogHwnd && IsWindow(m_lastDialogHwnd)) {
@@ -274,6 +316,10 @@ void TrayController::onForegroundChanged(quintptr hwndValue)
 
 void TrayController::onHotkeyPressed()
 {
+    // Con el menu de recientes abierto, lo que el usuario elija ahi es la carpeta que manda.
+    if (m_recentMenuOpen) {
+        return;
+    }
     HWND fg = GetForegroundWindow();
     if (!fg || !(WindowUtils::isFileDialogWindow(fg) || WindowUtils::isQtFileDialog(fg))) {
         qDebug() << "[TrayController] Hotkey: la ventana en foreground no es un file dialog.";
@@ -284,4 +330,34 @@ void TrayController::onHotkeyPressed()
         return;
     }
     performSwitch(fg);
+}
+
+void TrayController::onRecentHotkeyPressed()
+{
+    // Como Ctrl+Alt+O: solo dentro de un file dialog, y tambien con el cambio automatico en pausa.
+    HWND dialog = GetForegroundWindow();
+    if (!dialog || !(WindowUtils::isFileDialogWindow(dialog) || WindowUtils::isQtFileDialog(dialog))) {
+        qDebug() << "[TrayController] Recientes: la ventana en foreground no es un file dialog.";
+        return;
+    }
+    if (m_recentMenuOpen) {
+        return;
+    }
+    m_recentMenuOpen = true;
+
+    RecentFoldersPopup popup(m_state->recentFolders());
+    const QString path = popup.exec(QCursor::pos());
+    m_recentMenuOpen = false;
+
+    if (path.isEmpty() || !IsWindow(dialog)) {
+        return;
+    }
+    // Devolverle el foco al dialogo antes de escribirle la ruta, con la misma demora que el cambio
+    // automatico.
+    SetForegroundWindow(dialog);
+    QTimer::singleShot(kSwitchDelayMs, this, [this, dialog, path]() {
+        if (IsWindow(dialog)) {
+            applyFolder(dialog, path, QStringLiteral("Recent"));
+        }
+    });
 }

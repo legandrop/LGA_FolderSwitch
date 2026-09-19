@@ -2,11 +2,14 @@
 
 #include "core/AppState.h"
 #include "ui/MainWindow.h"
+#include "ui/TitleBar.h"
 #include "ui/UiWidgets.h"
 #include "ui/HelpDialog.h"
+#include "ui/RecentFoldersPopup.h"
 #include "tray/TrayMenu.h"
 #include "updates/UpdateDialog.h"
 
+#include <QAbstractButton>
 #include <QApplication>
 #include <QCoreApplication>
 #include <QDir>
@@ -18,6 +21,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QStringList>
 #include <QAbstractButton>
 #include <QPixmap>
 #include <QSaveFile>
@@ -46,7 +50,14 @@ const QStringList kStates = {
     QStringLiteral("hotkey-busy"),
     QStringLiteral("failed-hotkey-busy"),
     QStringLiteral("help"),
+    // Hover sin mouse: se marca el widget como "debajo del mouse" (el mismo estado que deja Qt al
+    // entrar el cursor) y se dibuja. Prueba la pintura del hover, no que el evento llegue.
+    QStringLiteral("hover-help"),
+    QStringLiteral("hover-close"),
+    QStringLiteral("help-link-hover"),
     QStringLiteral("tray-menu"),
+    QStringLiteral("recent-menu"),
+    QStringLiteral("recent-menu-empty"),
     QStringLiteral("update-dialog"),
 };
 
@@ -134,6 +145,7 @@ int runUiShot(const QStringList &args)
         last.applied = false;
     } else if (state == QLatin1String("hotkey-busy")) {
         appState.setHotkeyRegistered(false);
+        appState.setRecentHotkeyRegistered(false);
     } else if (state == QLatin1String("failed-hotkey-busy")) {
         // Fallo con el atajo sin registrar: el consejo no puede ser "reintentar con el atajo".
         last.source = QStringLiteral("XYplorer");
@@ -156,7 +168,16 @@ int runUiShot(const QStringList &args)
     // dialogo de update (que en la app son ventanas propias).
     QWidget *root = &mainWindow;
     QScopedPointer<QWidget> canvas;
-    if (state == QLatin1String("help")) {
+    if (state == QLatin1String("hover-help") || state == QLatin1String("hover-close")) {
+        const QString name = state == QLatin1String("hover-help") ? QStringLiteral("Help") : QStringLiteral("Close");
+        for (QAbstractButton *button : mainWindow.titleBar()->findChildren<QAbstractButton *>()) {
+            if (button->accessibleName() == name) {
+                button->setAttribute(Qt::WA_UnderMouse, true);
+                button->update();
+            }
+        }
+        settle(mainWindow);
+    } else if (state == QLatin1String("help") || state == QLatin1String("help-link-hover")) {
         // Velo y dialogo como hijos comunes de la ventana, no ventanas propias: se dibujan con el
         // mismo render y no hay nada que mostrar.
         auto *scrim = new Scrim(mainWindow.centralWidget());
@@ -166,6 +187,11 @@ int runUiShot(const QStringList &args)
         help->fitHeight();
         help->move((mainWindow.width() - help->width()) / 2, (mainWindow.height() - help->height()) / 2);
         help->setVisible(true);
+        if (state == QLatin1String("help-link-hover")) {
+            if (auto *link = help->findChild<QLabel *>(QStringLiteral("helpLink"))) {
+                Ui::setStyleProperty(link, "hover", true);
+            }
+        }
         settle(mainWindow);
     } else if (state == QLatin1String("tray-menu")) {
         canvas.reset(new QWidget);
@@ -195,6 +221,31 @@ int runUiShot(const QStringList &args)
         refreshTrayMenu(actions, true);
         menu->setActiveAction(actions.toggle);
         layout->addWidget(menu);
+        root = canvas.data();
+        settle(*root);
+        root->adjustSize();
+        settle(*root);
+    } else if (state == QLatin1String("recent-menu") || state == QLatin1String("recent-menu-empty")) {
+        // El menu de Ctrl+Alt+Shift+O sobre un fondo oscuro, como se ve encima de un dialogo.
+        QStringList folders;
+        if (state == QLatin1String("recent-menu")) {
+            folders = {kFixturePath,
+                       QStringLiteral("N:\\Proyectos\\2026_Serie_Ficticia\\Shots\\EP104_SH0230\\Comp\\Nuke\\"),
+                       QStringLiteral("D:\\Descargas\\Referencias & moodboard\\"),
+                       QStringLiteral("C:\\Users\\Public\\Documents\\"),
+                       QStringLiteral("N:\\Proyectos\\2026_Serie_Ficticia\\Entregas\\Semana 38\\")};
+        }
+        canvas.reset(new QWidget);
+        canvas->setObjectName(QStringLiteral("central"));
+        canvas->setAttribute(Qt::WA_DontShowOnScreen, true);
+        canvas->setStyleSheet(QStringLiteral("QWidget#central { background-color: #101010; }"));
+        auto *layout = new QVBoxLayout(canvas.data());
+        layout->setContentsMargins(0, 0, 0, 0);
+        auto *popup = new RecentFoldersPopup(folders, canvas.data());
+        popup->setWindowFlags(Qt::Widget);
+        // Mouse sobre la segunda fila, como el mockup.
+        popup->setCurrentIndex(folders.size() > 1 ? 1 : -1);
+        layout->addWidget(popup);
         root = canvas.data();
         settle(*root);
         root->adjustSize();

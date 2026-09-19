@@ -15,7 +15,7 @@ namespace Theme {
 
 // Fondos
 inline constexpr const char *kWindow = "#161616";
-inline constexpr const char *kTabBar = "#101010";
+inline constexpr const char *kTitleBar = "#101010";
 inline constexpr const char *kCard = "#1d1d1d";
 inline constexpr const char *kTile = "#242424";
 inline constexpr const char *kField = "#1a1a1a";

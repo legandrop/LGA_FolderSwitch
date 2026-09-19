@@ -1,4 +1,5 @@
 #include "tray/TrayController.h"
+#include "core/AppSettings.h"
 #include "core/DialogSwitcher.h"
 #include "windows/AutoStart.h"
 #include "qa/UiShot.h"
@@ -188,6 +189,10 @@ int main(int argc, char *argv[])
         CoUninitialize();
         return 0;
     }
+
+    // Antes de que nadie lea la configuracion: trae la del registro (versiones anteriores) al .ini de
+    // AppData. Despues de la instancia unica, para que dos copias no migren a la vez.
+    AppSettings::migrateFromRegistry();
 
     applyAppStyle(app);
 

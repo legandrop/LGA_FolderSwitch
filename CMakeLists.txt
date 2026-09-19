@@ -39,6 +39,7 @@ set(SOURCES
     src/main.cpp
     src/tray/TrayController.cpp
     src/ui/MainWindow.cpp
+    src/core/AppSettings.cpp
     src/core/ForegroundWatcher.cpp
     src/core/FolderResolver.cpp
     src/core/DialogSwitcher.cpp
@@ -52,7 +53,8 @@ set(SOURCES
     src/qa/UiShot.cpp
     src/ui/Theme.cpp
     src/ui/UiWidgets.cpp
-    src/ui/TabHeader.cpp
+    src/ui/TitleBar.cpp
+    src/ui/RecentFoldersPopup.cpp
     src/core/AppState.cpp
     src/ui/HelpDialog.cpp
     src/tray/TrayMenu.cpp
@@ -62,6 +64,7 @@ set(SOURCES
 set(HEADERS
     src/tray/TrayController.h
     src/ui/MainWindow.h
+    src/core/AppSettings.h
     src/core/ForegroundWatcher.h
     src/core/FolderResolver.h
     src/core/DialogSwitcher.h
@@ -75,7 +78,8 @@ set(HEADERS
     src/qa/UiShot.h
     src/ui/Theme.h
     src/ui/UiWidgets.h
-    src/ui/TabHeader.h
+    src/ui/TitleBar.h
+    src/ui/RecentFoldersPopup.h
     src/core/AppState.h
     src/ui/HelpDialog.h
     src/tray/TrayMenu.h
@@ -102,6 +106,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     oleaut32
     user32
     uuid
+    dwmapi
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE

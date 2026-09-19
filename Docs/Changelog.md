@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-09-18 (14)
+
+El menu de recientes era un `QMenu` con la sombra dura de Windows y un margen de icono enorme.
+Ahora es `RecentFoldersPopup` (opcion A1 del canvas): tarjeta redondeada con sombra propia,
+numeros en cajas violetas como el Shot Player, nombre y carpeta contenedora; se elige con el
+mouse, con 1-5 o con flechas + Enter. La configuracion pasa del registro a
+`%APPDATA%\LGA\LGA_FolderSwitch\settings.ini` (`AppSettings`), con migracion automatica, y el
+desinstalador borra esa carpeta, las descargas del update, la clave vieja y el inicio con
+Windows cuando apunta a esa instalacion.
+
+[commit sugerido: "feat: popup propio de carpetas recientes y configuracion en AppData"]
+
+## 2026-09-18 (13)
+
+Nuevo atajo `Ctrl+Alt+Shift+O`: dentro de un file dialog abre, donde esta el mouse, un menu con
+las ultimas 5 carpetas; elegir una la aplica al dialogo (fuente "Recent"). El historial guarda
+la carpeta de Explorer/XYplorer al salir de esa ventana y cada carpeta aplicada, sin repetidas,
+en la clave `recentFolders`. `HotkeyFilter` registra los dos atajos y la ventana muestra el
+nuevo con su propio aviso de "In use". `--ui-shot` suma `recent-menu` y `recent-menu-empty`.
+La ayuda dice solo "Developed by Lega Pugliese". Hay un `README.md` en ingles.
+
+[commit sugerido: "feat: menu de carpetas recientes con Ctrl+Alt+Shift+O y README"]
+
+## 2026-09-18 (12)
+
+La ventana tenia una barra de pestanas con una sola pestana (SETTINGS), que no aportaba nada, y
+los updates estaban escondidos en la ayuda. Ahora la ventana va sin el marco de Windows y con
+una barra de titulo propia (`TitleBar`, reemplaza a `TabHeader`): icono, nombre, `?` solido (el
+de File Manager S3), minimizar y cerrar; `MainWindow` le devuelve sombra, esquinas y minimizado
+con estilos nativos y `WM_NCCALCSIZE`. Tres tarjetas: estado + automatico + atajo, ultima
+carpeta, e inicio con Windows + updates ("Check for updates at startup", clave nueva
+`checkUpdatesAtStartup`, y "Check now"). Nada toma foco de teclado (filtro global en `Theme`).
+La ayuda usa el encabezado de las otras apps LGA, con el link a GitHub con hover.
+
+[commit sugerido: "feat: ventana sin pestanas, barra de titulo propia y updates a la vista"]
+
 ## 2026-09-18 (11)
 
 FolderSwitch es de instancia unica (con otra copia abierta, la nueva sale en silencio por el

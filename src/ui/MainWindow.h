@@ -10,12 +10,12 @@ class QCheckBox;
 class QFrame;
 class QLabel;
 class QPushButton;
-class TabHeader;
+class TitleBar;
 
-// Ventana de Settings de LGA FolderSwitch: tarjeta de estado (On/Paused), ultima carpeta y
-// opciones. Todo lo que muestra sale de AppState; lo que el usuario cambia se escribe en AppState
-// (o en AutoStart, para el inicio con Windows). El boton X no cierra la app: oculta la ventana a
-// la bandeja (closeEvent).
+// Ventana de Settings de LGA FolderSwitch: barra de titulo propia (sin el marco de Windows),
+// tarjeta de estado (On/Paused), ultima carpeta y opciones, updates incluidos. Todo lo que muestra
+// sale de AppState; lo que el usuario cambia se escribe en AppState (o en AutoStart, para el inicio
+// con Windows). Cerrar no cierra la app: oculta la ventana a la bandeja (closeEvent).
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -28,7 +28,7 @@ public:
     MainWindow(AppState *state, Mode mode, QWidget *parent = nullptr);
     ~MainWindow() override;
 
-    TabHeader *tabHeader() const { return m_header; }
+    TitleBar *titleBar() const { return m_titleBar; }
 
     // Solo para Mode::Capture: estado del checkbox de inicio con Windows.
     void applyAutoStartFixture(bool enabled, bool available);
@@ -37,10 +37,12 @@ public:
 
 signals:
     void helpRequested();
+    void checkUpdatesRequested();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
 
 private slots:
     void onAutoStartToggled(bool checked);
@@ -54,11 +56,14 @@ private:
     void syncAutoStartCheck();
     void setAutoStartTooltip(bool available);
     void fitHeight();
+    // Sin el marco de Windows pero con su sombra, sus esquinas y su minimizar: ver el .cpp.
+    void applyNativeFrame();
 
     AppState *m_state = nullptr;
     Mode m_mode = Mode::Normal;
 
-    TabHeader *m_header = nullptr;
+    TitleBar *m_titleBar = nullptr;
+    bool m_nativeFrameApplied = false;
     QLabel *m_statusDot = nullptr;
     QLabel *m_statusTitle = nullptr;
     QLabel *m_statusCaption = nullptr;
@@ -73,7 +78,11 @@ private:
     QCheckBox *m_autoSwitchCheck = nullptr;
     Chip *m_hotkeyBusyChip = nullptr;
     QLabel *m_hotkeyCaption = nullptr;
+    Chip *m_recentBusyChip = nullptr;
+    QLabel *m_recentCaption = nullptr;
     QCheckBox *m_autoStartCheck = nullptr;
+    QCheckBox *m_updatesCheck = nullptr;
+    QPushButton *m_checkNowButton = nullptr;
 };
 
 #endif // FOLDERSWITCH_MAINWINDOW_H

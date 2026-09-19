@@ -1,14 +1,38 @@
 #include "ui/Theme.h"
 
 #include <QApplication>
+#include <QEvent>
 #include <QFontDatabase>
 #include <QList>
 #include <QPair>
 #include <QPalette>
 #include <QScreen>
 #include <QStyleFactory>
+#include <QWidget>
 
 namespace {
+
+// En esta app nada toma foco de teclado: Tab no recorre controles y ningun boton queda marcado al
+// abrir una ventana. Se aplica a TODO widget al pulirse (antes de mostrarse por primera vez), asi
+// tambien cubre los QMessageBox y el progreso del update. La excepcion son los campos donde se
+// escribe texto (WA_InputMethodEnabled), que hoy la app no tiene.
+class NoKeyboardFocus : public QObject
+{
+public:
+    using QObject::QObject;
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (event->type() == QEvent::Polish && watched->isWidgetType()) {
+            auto *widget = static_cast<QWidget *>(watched);
+            if (!widget->testAttribute(Qt::WA_InputMethodEnabled)) {
+                widget->setFocusPolicy(Qt::NoFocus);
+            }
+        }
+        return QObject::eventFilter(watched, event);
+    }
+};
 
 // QFont y QSS solo aceptan pixeles enteros. Los tamanos del diseno (13.5px, 12.5px) se expresan
 // en puntos segun el DPI logico (96 en Windows: 1px = 0.75pt). Mismo criterio que VideoDownloader.
@@ -72,6 +96,7 @@ void apply(QApplication &app)
 
     app.setFont(uiFont(14));
     app.setStyleSheet(styleSheet());
+    app.installEventFilter(new NoKeyboardFocus(&app));
 }
 
 QString styleSheet()
@@ -84,6 +109,10 @@ QString styleSheet()
 QMainWindow, QWidget#central, QWidget#content, QWidget#helpPage { background-color: @window; }
 QLabel { background: transparent; color: @text; }
 QToolTip { background-color: @tile; color: @text; border: 1px solid #333333; padding: 4px 6px; }
+
+/* Barra de titulo propia */
+QLabel#titleBarTitle { color: @textMuted; font-size: @fs13; font-weight: 500; }
+QFrame#titleBarSeparator { background-color: @border; border: none; }
 
 QFrame#card { background-color: @card; border: none; border-radius: 8px; }
 QLabel#cardTitle { color: @textStrong; font-size: @fs14; font-weight: 600; }
@@ -156,10 +185,11 @@ QProgressBar { background-color: #393959; border: 1px solid #444444; border-radi
 QProgressBar::chunk { background-color: #6a55c9; border-radius: 3px; }
 
 /* Ayuda */
-QLabel#helpTitle { color: #E0E0E0; font-size: @fs18; font-weight: 600; }
-QLabel#helpVersion { color: @textMuted; font-size: @fs14; }
-QLabel#kvKey { color: @textMuted; font-size: @fs13; }
-QLabel#kvValue { color: @text; font-size: @fs13; }
+QLabel#helpTitle { color: rgb(127, 98, 170); font-size: @fs20; font-weight: 600; }
+QLabel#helpVersion { color: @textStrong; font-size: @fs16; font-weight: 600; }
+QLabel#helpDeveloped { color: #9D9D9D; font-size: @fs14; }
+QLabel#helpLink { color: @link; font-size: @fs14; text-decoration: underline; }
+QLabel#helpLink[hover="true"] { color: #C9C0F5; }
 QLabel#helpSection { color: @textStrong; font-size: @fs13_5; font-weight: 600; }
 QLabel#helpBody { color: #a9a9ae; font-size: @fs13; }
 QLabel#helpNote { color: @textCaption; font-size: @fs12; }
@@ -171,9 +201,9 @@ QFrame#helpRule { background-color: @border; border: none; min-height: 1px; max-
         {"@field", kField}, {"@border", kBorder}, {"@divider", kDivider}, {"@dialog", kDialog},
         {"@textStrong", kTextStrong}, {"@textBright", kTextBright}, {"@textMuted", kTextMuted},
         {"@textCaption", kTextCaption}, {"@textFaint", kTextFaint}, {"@textPlaceholder", kTextPlaceholder},
-        {"@text", kText}, {"@ok", kOk}, {"@error", kError},
+        {"@link", kLink}, {"@text", kText}, {"@ok", kOk}, {"@error", kError},
         {"@fs13_5", fs(13.5)}, {"@fs12_5", fs(12.5)}, {"@fs11_5", fs(11.5)},
-        {"@fs18", fs(18)}, {"@fs14", fs(14)}, {"@fs13", fs(13)}, {"@fs12", fs(12)},
+        {"@fs20", fs(20)}, {"@fs16", fs(16)}, {"@fs14", fs(14)}, {"@fs13", fs(13)}, {"@fs12", fs(12)},
     };
     // Orden: los nombres largos primero ("@textStrong" antes que "@text", "@fs13_5" antes que "@fs13").
     for (const auto &token : tokens) {

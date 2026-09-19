@@ -12,38 +12,15 @@
 
 namespace {
 
-// Arco de SVG (radio unico, sin rotacion) pasado a QPainterPath: centro desde los extremos.
-void svgArc(QPainterPath &path, QPointF to, qreal r, bool largeArc, bool sweep)
-{
-    const QPointF from = path.currentPosition();
-    const qreal dx = (from.x() - to.x()) / 2.0;
-    const qreal dy = (from.y() - to.y()) / 2.0;
-    const qreal d2 = dx * dx + dy * dy;
-    if (d2 <= 0.0) {
-        return;
-    }
-    if (d2 > r * r) {
-        r = qSqrt(d2);
-    }
-    const qreal coef = qSqrt(qMax<qreal>(0.0, (r * r - d2) / d2)) * ((largeArc == sweep) ? -1.0 : 1.0);
-    const QPointF center(coef * dy + (from.x() + to.x()) / 2.0, coef * -dx + (from.y() + to.y()) / 2.0);
-    const qreal a1 = qAtan2(from.y() - center.y(), from.x() - center.x());
-    const qreal a2 = qAtan2(to.y() - center.y(), to.x() - center.x());
-    qreal delta = a2 - a1;
-    if (sweep && delta < 0) {
-        delta += 2 * M_PI;
-    } else if (!sweep && delta > 0) {
-        delta -= 2 * M_PI;
-    }
-    // SVG mide con y hacia abajo; Qt con angulos antihorarios: se invierten los signos.
-    path.arcTo(QRectF(center.x() - r, center.y() - r, 2 * r, 2 * r), -qRadiansToDegrees(a1), -qRadiansToDegrees(delta));
-}
-
 struct IconSpec {
     qreal viewBox;
     qreal stroke;
     QPainterPath strokePath;
     QPainterPath fillPath;
+    // Los trazos redondos son los de VideoDownloader; los glifos copiados de un SVG ajeno
+    // (el ? de File Manager S3, los de la barra de titulo) conservan sus puntas rectas.
+    Qt::PenCapStyle cap = Qt::RoundCap;
+    Qt::PenJoinStyle join = Qt::RoundJoin;
 };
 
 IconSpec buildIcon(Icon icon)
@@ -52,12 +29,37 @@ IconSpec buildIcon(Icon icon)
     QPainterPath &p = s.strokePath;
     switch (icon) {
     case Icon::Help:
-        s.viewBox = 20; s.stroke = 1.7;
-        p.addEllipse(QPointF(10, 10), 8, 8);
-        p.moveTo(7.6, 7.6);
-        svgArc(p, QPointF(12.4, 8.5), 2.5, false, true);
-        p.cubicTo(12.4, 10.2, 10, 10.6, 10, 11.9);
-        s.fillPath.addEllipse(QPointF(10, 14.6), 1.25, 1.25);
+        // resources/icons/help.svg de LGA_FileManagerS3: signo de pregunta solido, sin circulo.
+        // Relleno y ademas trazado con 26 de grosor y union en punta, como el original.
+        s.viewBox = 512; s.stroke = 26;
+        s.cap = Qt::FlatCap; s.join = Qt::MiterJoin;
+        p.moveTo(215, 324.5);
+        p.cubicTo(215, 271.7, 221.1, 248.6, 276.8, 212.8);
+        p.cubicTo(300.4, 197.9, 314.4, 180.9, 314.4, 158.3);
+        p.cubicTo(314.4, 115.4, 281.1, 103.8, 255.6, 103.8);
+        p.cubicTo(201.1, 103.8, 193.2, 141.2, 190.2, 167.1);
+        p.lineTo(190.2, 167.7);
+        p.lineTo(104.8, 167.7);
+        p.cubicTo(104.8, 72, 184.1, 39, 250.2, 39);
+        p.cubicTo(316.3, 39, 405.3, 48.4, 405.3, 156.2);
+        p.cubicTo(405.3, 264, 378.6, 227.2, 332, 257.4);
+        p.cubicTo(306, 274.5, 295.1, 284.9, 295.1, 324.5);
+        p.closeSubpath();
+        p.moveTo(301, 481);
+        p.lineTo(212.6, 481);
+        p.lineTo(212.6, 403.4);
+        p.lineTo(301, 403.4);
+        p.closeSubpath();
+        s.fillPath = p;
+        break;
+    case Icon::Minimize:
+        s.viewBox = 10; s.stroke = 1.2; s.cap = Qt::FlatCap;
+        p.moveTo(0, 5.5); p.lineTo(10, 5.5);
+        break;
+    case Icon::Close:
+        s.viewBox = 10; s.stroke = 1.2; s.cap = Qt::FlatCap;
+        p.moveTo(0.5, 0.5); p.lineTo(9.5, 9.5);
+        p.moveTo(9.5, 0.5); p.lineTo(0.5, 9.5);
         break;
     case Icon::Folder:
         s.viewBox = 16; s.stroke = 1.4;
@@ -130,7 +132,7 @@ void paint(QPainter &painter, Icon icon, const QRectF &rect, const QColor &color
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.translate(rect.center().x() - spec.viewBox * scale / 2.0, rect.center().y() - spec.viewBox * scale / 2.0);
     painter.scale(scale, scale);
-    painter.setPen(QPen(color, spec.stroke, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setPen(QPen(color, spec.stroke, Qt::SolidLine, spec.cap, spec.join));
     painter.setBrush(Qt::NoBrush);
     painter.drawPath(spec.strokePath);
     if (!spec.fillPath.isEmpty()) {
@@ -256,7 +258,6 @@ QPushButton *button(const QString &text, const QString &variant, const QString &
         b->setProperty("btnSize", size);
     }
     b->setCursor(Qt::PointingHandCursor);
-    b->setFocusPolicy(Qt::TabFocus);
     return b;
 }
 

@@ -3,9 +3,9 @@
 
 #include <QDialog>
 
-// Ayuda: version, buscar updates, autor y como se usa. Mismo lenguaje que el HelpDialog de
-// LGA_VideoDownloader: sin marco del sistema, su propia caja redondeada sobre un velo que oscurece
-// la ventana. El dialogo no conoce UpdateService: pide el chequeo con checkRequested().
+// Ayuda: version, autor, link a GitHub y como se usa (los updates viven en la ventana principal, no aca). Mismo
+// lenguaje que el HelpDialog de LGA_VideoDownloader: sin marco del sistema, su propia caja
+// redondeada sobre un velo que oscurece la ventana.
 class HelpDialog : public QDialog
 {
     Q_OBJECT
@@ -16,9 +16,6 @@ public:
     int execOver(QWidget *window);
     // Ancho fijo y alto del layout ya pulido. Publico para la captura de QA.
     void fitHeight();
-
-signals:
-    void checkRequested();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
