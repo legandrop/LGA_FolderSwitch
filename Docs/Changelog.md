@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-24 (1)
+
+El anillo CMY del icono de la app tenia la separacion entre planchas mas ancha que el resto del
+pack: alrededor de 7,2% del dibujo contra el ~4,9% que usa PipeSync. Se reconstruyeron las tres
+planchas desde el PNG maestro (`resources/icons/LGA_FolderSwitch_1024.png`) acercadas en
+proporcion k=0,68 y se rehizo cada salida con el mismo encuadre que tenia: `LGA_FolderSwitch.png`
+y `LGA_FolderSwitch.ico` (sus siete tamanos, 16 a 256 px). `LGA_FolderSwitch_menubar.png` y
+`tools/logo/` no se tocaron.
+
+[commit sugerido: "Las planchas del icono se acercan como en PipeSync"]
+
 ## 2026-09-23 (1)
 
 El cuerpo del icono de la app (`LGA_FolderSwitch.ico`, `.png`, `_1024.png`) era `#231a16`, un
