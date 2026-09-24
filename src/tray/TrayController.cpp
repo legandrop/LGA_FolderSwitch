@@ -125,8 +125,7 @@ void TrayController::runFirstLaunchSetupIfNeeded()
 
 void TrayController::applyTrayIcon()
 {
-    const QColor barColor = systemBarIsLight() ? QColor(Qt::black) : QColor(Qt::white);
-    m_tray->setIcon(QIcon(trayIconPixmap(barColor, !m_state->enabled())));
+    m_tray->setIcon(trayIcon(systemBarIsLight(), !m_state->enabled()));
 }
 
 void TrayController::refreshFromState()

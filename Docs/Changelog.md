@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-24 (2)
+
+El icono de la bandeja era la silueta plana de la carpeta, teñida de blanco o negro según el tema de
+la barra: no llevaba el desregistro CMY del resto del pack. Ahora, con el cambio activo, es la marca
+en color: planchas corridas en píxeles enteros (amarillo quieto, magenta a la derecha, cian abajo, la
+misma fórmula del tray de FrameRev) y el cuerpo en la triple intersección, blanco sobre barra oscura y
+`#262626` sobre barra clara. Son PNG por tamaño (16 a 48 px) en `resources/icons/tray/`, porque
+`QSvgRenderer` no hace multiply y a 16 px un desfase fraccionario ensucia el borde; los genera
+`tools/logo/tray_color.py`. En pausa sigue la silueta atenuada al 40 %: el color pasa a indicar que
+la app está andando.
+
+[commit sugerido: "El icono de la bandeja pasa a color con desregistro ajustado al pixel"]
+
 ## 2026-09-24 (1)
 
 El anillo CMY del icono de la app tenia la separacion entre planchas mas ancha que el resto del

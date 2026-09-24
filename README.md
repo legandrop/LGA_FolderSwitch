@@ -39,7 +39,8 @@ folders, without duplicates, and is kept across app and computer restarts.
 FolderSwitch lives in the system tray. Click the tray icon to open its window:
 
 - **Switching is on / paused.** Pause and resume the automatic switch. While paused, dialogs
-  keep their own folder and only the shortcuts work.
+  keep their own folder and only the shortcuts work. The tray icon shows the state: in color while
+  switching is on, a dimmed plain shape while it is paused.
 - **Switch automatically.** Turns the automatic switch on or off.
 - **Manual shortcut / Recent folders.** The two shortcuts. If another app already uses one of
   them, it is marked *In use* and the other features keep working.

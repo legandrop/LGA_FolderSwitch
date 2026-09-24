@@ -207,9 +207,8 @@ int runUiShot(const QStringList &args)
         for (const bool paused : {false, true}) {
             auto *icon = new QLabel(canvas.data());
             icon->setObjectName(paused ? QStringLiteral("trayIconPaused") : QStringLiteral("trayIconOn"));
-            QPixmap px = trayIconPixmap(Qt::white, paused).scaled(QSize(16, 16) * dpr, Qt::KeepAspectRatio,
-                                                                  Qt::SmoothTransformation);
-            px.setDevicePixelRatio(dpr);
+            // pixmap(size, dpr) toma el PNG del tamano fisico que pide la bandeja real (16 * dpr).
+            QPixmap px = trayIcon(false, paused).pixmap(QSize(16, 16), dpr);
             icon->setPixmap(px);
             icons->addWidget(icon);
         }
