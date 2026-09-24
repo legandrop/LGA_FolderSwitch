@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-23 (1)
+
+El cuerpo del icono de la app (`LGA_FolderSwitch.ico`, `.png`, `_1024.png`) era `#231a16`, un
+marron oscuro que no coincidia con el negro neutro `#262626` que usa el resto de las apps LGA
+(PipeSync, ShotPlayer, MediaTools). Se recoloreo el cuerpo a `#262626` en los tres archivos,
+conservando el desregistro CMY de las planchas y el alfa; el `.ico` mantiene todos sus tamanos
+(16 a 256 px). `LGA_FolderSwitch_menubar.png` no se toco: es la plantilla monocroma del tray.
+
+[commit sugerido: "El icono de la app usa el mismo negro que el resto del pack"]
+
 ## 2026-09-18 (15)
 
 El repo no tenia roadmap ni registro de decisiones, que la Base pide a toda app LGA: lo pendiente
