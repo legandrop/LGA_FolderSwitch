@@ -30,7 +30,9 @@ OUT = os.path.join("..", "..", "resources", "icons", "tray")
 SIZES = (16, 20, 24, 32, 40, 48)
 SS = 16
 INK = {"Y": marks.YELLOW, "M": marks.MAGENTA, "C": marks.CYAN}
-OFF16 = {"Y": (-1, 0), "M": (0, -1), "C": (1, 1)}  # px a 16; escala con round(n / 16)
+# En pasos de round(n / 16) px. El cian a medio paso: con uno entero, abajo y a la derecha pesaba el
+# doble. Medio paso cae en pixel entero salvo cuando el paso es impar (16 y 20 px).
+OFF16 = {"Y": (-1, 0), "M": (0, -1), "C": (0.5, 0.5)}
 SHIFT = (-2.5, -4.0)  # en unidades de 100
 BODY = marks.CORE
 

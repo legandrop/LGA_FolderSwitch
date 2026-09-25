@@ -38,8 +38,9 @@ public static class TrayColor {
         }
     }
 
-    // off: desfase de Y, M y C en px a 16; shift: corrimiento global en unidades de 100.
-    public static void Icon(double[][] poly, int n, int[] off, double[] shift, int[] ink, int[] body, string path) {
+    // off: desfase de Y, M y C en pasos (1 paso = round(n / 16) px); shift: corrimiento global en
+    // unidades de 100. Un medio paso cae en pixel entero salvo cuando el paso es impar (16 y 20 px).
+    public static void Icon(double[][] poly, int n, double[] off, double[] shift, int[] ink, int[] body, string path) {
         int step = (int)Math.Round(n / 16.0, MidpointRounding.ToEven);  // igual que round() de Python
         // El centrado tambien va en pixeles enteros: un corrimiento fraccionario ensucia el borde.
         double sx = Math.Round(shift[0] * n / 100.0) * SS, sy = Math.Round(shift[1] * n / 100.0) * SS;
@@ -91,7 +92,8 @@ $j = $json | ConvertFrom-Json
 $poly = [double[][]]@($j.p | ForEach-Object { ,([double[]]@($_[0], $_[1])) })
 
 # Misma direccion que el app-icon: amarillo a la izquierda, magenta arriba, cian abajo a la derecha.
-$off = [int[]]@(-1, 0, 0, -1, 1, 1)
+# El cian va a medio paso: con un paso entero el borde de abajo y el de la derecha pesaban el doble.
+$off = [double[]]@(-1, 0, 0, -1, 0.5, 0.5)
 $shift = [double[]]@(-2.5, -4.0)   # centra en el canvas el conjunto de las tres planchas
 New-Item -ItemType Directory -Force $out | Out-Null
 foreach ($n in 16, 20, 24, 32, 40, 48) {

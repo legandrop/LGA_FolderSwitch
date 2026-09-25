@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-24 (4)
+
+Con el cian corrido un paso entero, el icono de la bandeja quedaba con demasiado borde: a 16 px eran
+dos píxeles de color por lado, y abajo y a la derecha pesaba el doble. Reducir el app-icon, como
+hace Nuke Shortcuts, se quedaba corto y borroso. Ahora el amarillo y el magenta siguen a un paso y el
+cian va a medio paso: a 16 y 20 px cae en medio píxel, y desde 24 px cae en píxel entero y queda
+nítido. `tray_color.ps1` y `tray_color.py` aceptan medios pasos.
+
+[commit sugerido: "El cian del icono de la bandeja se corre medio paso"]
+
 ## 2026-09-24 (3)
 
 El icono de la bandeja llevaba cuerpo blanco sobre la barra oscura y `#262626` sobre la clara, así
