@@ -30,11 +30,11 @@ QIcon trayIcon(bool lightBar, bool paused)
 {
     if (!paused) {
         // Un PNG por tamano: el desfase de las planchas cae en pixeles enteros en cada uno, y QIcon
-        // elige el que corresponde a la escala de la pantalla.
-        const QString body = lightBar ? QStringLiteral("dark") : QStringLiteral("white");
+        // elige el que corresponde a la escala de la pantalla. El mismo sobre barra clara y oscura:
+        // sobre la oscura el cuerpo se funde y la forma la dibuja el borde de color.
         QIcon icon;
         for (int px : {16, 20, 24, 32, 40, 48}) {
-            icon.addFile(QStringLiteral(":/icons/tray/tray_%1_%2.png").arg(body).arg(px), QSize(px, px));
+            icon.addFile(QStringLiteral(":/icons/tray/tray_%1.png").arg(px), QSize(px, px));
         }
         return icon;
     }

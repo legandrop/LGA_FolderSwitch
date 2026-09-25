@@ -3,18 +3,12 @@
     <qresource prefix="/">
         <file>icons/LGA_FolderSwitch.png</file>
         <file>icons/LGA_FolderSwitch_menubar.png</file>
-        <file>icons/tray/tray_white_16.png</file>
-        <file>icons/tray/tray_white_20.png</file>
-        <file>icons/tray/tray_white_24.png</file>
-        <file>icons/tray/tray_white_32.png</file>
-        <file>icons/tray/tray_white_40.png</file>
-        <file>icons/tray/tray_white_48.png</file>
-        <file>icons/tray/tray_dark_16.png</file>
-        <file>icons/tray/tray_dark_20.png</file>
-        <file>icons/tray/tray_dark_24.png</file>
-        <file>icons/tray/tray_dark_32.png</file>
-        <file>icons/tray/tray_dark_40.png</file>
-        <file>icons/tray/tray_dark_48.png</file>
+        <file>icons/tray/tray_16.png</file>
+        <file>icons/tray/tray_20.png</file>
+        <file>icons/tray/tray_24.png</file>
+        <file>icons/tray/tray_32.png</file>
+        <file>icons/tray/tray_40.png</file>
+        <file>icons/tray/tray_48.png</file>
         <file>icons/check.png</file>
         <file>fonts/Inter-Regular.ttf</file>
         <file>fonts/Inter-Medium.ttf</file>

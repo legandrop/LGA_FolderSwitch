@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-24 (3)
+
+El icono de la bandeja llevaba cuerpo blanco sobre la barra oscura y `#262626` sobre la clara, así
+que no era el mismo icono que el de la app. Ahora es uno solo para las dos barras, con cuerpo
+`#262626` como el tray de Nuke Shortcuts: sobre la barra oscura el cuerpo se funde y la forma la
+dibuja el borde de color. Las planchas van en la dirección del app-icon (amarillo a la izquierda,
+magenta arriba, cian abajo a la derecha), así tres lados del borde quedan en tintas puras, que son
+las que se leen sobre fondo oscuro. Las planchas y el centrado se corren en píxeles enteros. Los PNG
+pasan de 12 a 6 (`tray_<n>.png`), y `tools/logo/tray_color.ps1` los genera en Windows sin numpy.
+
+[commit sugerido: "El icono de la bandeja usa cuerpo oscuro en las dos barras"]
+
 ## 2026-09-24 (2)
 
 El icono de la bandeja era la silueta plana de la carpeta, teñida de blanco o negro según el tema de
